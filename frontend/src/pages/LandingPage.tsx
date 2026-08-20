@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { FeatureIcon, type FeatureIconName } from '@/components/FeatureIcon';
 import { HeroVisual } from '@/components/HeroVisual';
 import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
@@ -101,8 +102,8 @@ export function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
+              <Link
+                to="/signup"
                 className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-accent-blue to-accent-violet px-7 py-4 text-base font-semibold text-white shadow-lg shadow-accent-violet/25 transition hover:shadow-xl hover:shadow-accent-violet/40"
               >
                 Start an assessment
@@ -112,7 +113,7 @@ export function LandingPage() {
                 >
                   →
                 </span>
-              </button>
+              </Link>
               <a
                 href="#how-it-works"
                 className="inline-flex items-center rounded-full border border-ink-300 px-7 py-4 text-base font-semibold transition hover:border-ink-950 dark:border-ink-700 dark:hover:border-ink-0"

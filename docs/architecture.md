@@ -180,7 +180,84 @@ the OS live via a `matchMedia` listener). An explicit choice is persisted to
   storage key deliberately; `contexts/theme.ts` documents that the two must be
   changed together.
 
-## 10. Safety architecture (planned, Phase 8)
+## 10. Authentication and authorization
+
+### Credentials
+
+Passwords are hashed with **Argon2id** (`argon2-cffi` defaults). Hashes are
+upgraded transparently on login when the parameters fall behind. Plaintext
+passwords exist only inside `app/core/security.py`, are never logged, and are
+stripped from validation errors before they reach a response — Pydantic puts the
+offending value in its error output, which for a signup form is the password
+itself.
+
+Login is constant-shaped: an unknown address is verified against a dummy hash so
+the response, the error code and the timing are identical to a wrong password.
+Account existence is not disclosed to anonymous callers.
+
+### Tokens
+
+| | Access | Refresh |
+| --- | --- | --- |
+| Lifetime | 30 min | 14 days |
+| Transport | `Authorization: Bearer` | httpOnly cookie, `SameSite=Lax`, path-scoped to `/api/auth` |
+| Client storage | memory only | not readable by script |
+| Revocable | no | yes, via `users.token_version` |
+
+The access token is deliberately **not** in `localStorage`: anything script can
+read, an XSS payload can read. Sessions survive a reload because the frontend
+silently exchanges the refresh cookie for a new access token on startup, and
+again whenever a request returns 401 (once, with concurrent 401s sharing a
+single refresh).
+
+Logout increments `token_version`, which invalidates every outstanding refresh
+token for that user. The current access token remains valid until it expires —
+inherent to stateless JWTs, and the reason its lifetime is short.
+
+`JWT_SECRET` is validated at startup: production refuses to boot with the
+placeholder value or a key under 32 bytes (RFC 7518 §3.2).
+
+### Google sign-in
+
+The browser obtains an ID token; the server verifies it against Google's JWKS —
+signature, issuer, audience and expiry — before trusting any claim. An
+unverified `email_verified` is rejected outright, since an unverified address
+must never be used to match an existing account.
+
+Verification sits behind a `GoogleTokenVerifier` Protocol, so the test suite
+substitutes a stub and never touches the network. With no `GOOGLE_CLIENT_ID`
+configured the endpoint reports 503 rather than pretending to work.
+
+Accounts are keyed on Google's `sub` claim, not email: a user who changes their
+Google address keeps the same account.
+
+### Account linking
+
+When a Google sign-in presents an email that already belongs to a password
+account, MedAnalyser **refuses** and returns `reason: google_link_required`. It
+does not create a second account, and it does not silently attach the provider
+to an account whose owner never asked for it. The user signs in with their
+password and links Google deliberately. A provider identity belongs to exactly
+one user, enforced by a unique constraint rather than by application logic alone.
+
+### Age verification
+
+Date of birth is collected during onboarding — never from the OAuth provider,
+which is not a trustworthy source for it. Age is computed from the **server's**
+clock; a rejected date is not persisted at all. Leap-year birthdays are handled
+by tuple comparison (29 February counts on 1 March in non-leap years).
+
+`OnboardedUser` is the dependency every medical feature will depend on, so an
+account that has not passed the age check cannot reach one.
+
+### Authorization
+
+Route guards in the frontend control navigation only. Authorization is decided
+server-side on every request; the browser is never trusted to enforce who may
+read what. From Phase 3, repositories filter user-owned rows by `user_id` so the
+ownership check exists in one place rather than in each route.
+
+## 11. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

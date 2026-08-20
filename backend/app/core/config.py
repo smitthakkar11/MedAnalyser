@@ -12,8 +12,14 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+#: Placeholder secret shipped in `.env.example`; rejected in production.
+DEFAULT_JWT_SECRET = "change-me-in-production-use-a-long-random-value"
+
+#: Minimum HMAC key length for HS256 (RFC 7518 section 3.2).
+MINIMUM_JWT_SECRET_BYTES = 32
 
 # Repository root: backend/app/core/config.py -> backend/
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -59,7 +65,9 @@ class Settings(BaseSettings):
     db_echo: bool = False
 
     # --- Security -----------------------------------------------------------
-    jwt_secret: str = "change-me-in-production-use-a-long-random-value"
+    #: Must be replaced with a long random value before production. HS256 keys
+    #: shorter than 32 bytes weaken the signature (RFC 7518 §3.2).
+    jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 14
@@ -108,6 +116,22 @@ class Settings(BaseSettings):
         if level not in allowed:
             raise ValueError(f"log_level must be one of {sorted(allowed)}")
         return level
+
+    @model_validator(mode="after")
+    def _require_a_strong_production_secret(self) -> Settings:
+        """Refuse to start in production with a weak or placeholder JWT secret.
+
+        Failing at startup is far better than silently signing tokens with a
+        value that is public in the repository.
+        """
+        if self.environment is Environment.PRODUCTION:
+            if self.jwt_secret == DEFAULT_JWT_SECRET:
+                raise ValueError("JWT_SECRET must be changed from its default value in production.")
+            if len(self.jwt_secret.encode()) < MINIMUM_JWT_SECRET_BYTES:
+                raise ValueError(
+                    f"JWT_SECRET must be at least {MINIMUM_JWT_SECRET_BYTES} bytes in production."
+                )
+        return self
 
     @property
     def is_production(self) -> bool:

@@ -28,18 +28,18 @@ export function PublicLayout() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
-            <button
-              type="button"
+            <Link
+              to="/login"
               className="hidden whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold text-ink-700 transition hover:text-ink-950 sm:inline-flex dark:text-ink-400 dark:hover:text-ink-0"
             >
               Sign in
-            </button>
-            <button
-              type="button"
+            </Link>
+            <Link
+              to="/signup"
               className="inline-flex whitespace-nowrap rounded-full bg-ink-950 px-4 py-2.5 text-sm font-semibold text-ink-0 transition hover:bg-ink-800 sm:px-5 dark:bg-ink-0 dark:text-ink-950 dark:hover:bg-ink-200"
             >
               Get started
-            </button>
+            </Link>
           </div>
         </div>
       </header>

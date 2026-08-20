@@ -6,5 +6,6 @@ populated before Alembic autogenerates a migration.
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.user import OAuthAccount, User
 
-__all__ = ["Base", "TimestampMixin", "UUIDPrimaryKeyMixin"]
+__all__ = ["Base", "OAuthAccount", "TimestampMixin", "UUIDPrimaryKeyMixin", "User"]

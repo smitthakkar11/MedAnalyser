@@ -11,6 +11,7 @@ as a generic message, so that internal details never leak.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from fastapi import FastAPI, Request, status
@@ -81,6 +82,41 @@ class ServiceUnavailableError(AppError):
     message = "A required service is currently unavailable."
 
 
+def sanitise_validation_errors(
+    errors: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Reduce Pydantic validation errors to a safe, serialisable shape.
+
+    Two reasons this is not `exc.errors()` verbatim:
+
+    1. **Never echo the input.** Pydantic includes the offending value under
+       `input`, which for a signup request is the user's plaintext password.
+       That value must not travel back in a response or into a log.
+    2. **Stay serialisable.** Custom validators put the original exception
+       object in `ctx`, which JSON cannot encode.
+    """
+    return [
+        {
+            "type": str(error.get("type", "value_error")),
+            "field": ".".join(str(part) for part in error.get("loc", ()) if part != "body"),
+            "message": _clean_message(str(error.get("msg", "Invalid value."))),
+        }
+        for error in errors
+    ]
+
+
+#: Prefixes Pydantic prepends to messages raised by custom validators. They are
+#: implementation noise to anyone reading the form.
+_MESSAGE_PREFIXES = ("Value error, ", "Assertion failed, ")
+
+
+def _clean_message(message: str) -> str:
+    for prefix in _MESSAGE_PREFIXES:
+        if message.startswith(prefix):
+            return message[len(prefix) :]
+    return message
+
+
 def _error_response(
     status_code: int,
     code: str,
@@ -117,7 +153,7 @@ def register_exception_handlers(app: FastAPI) -> None:
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "validation_error",
             "The request payload is invalid.",
-            {"errors": exc.errors()},
+            {"errors": sanitise_validation_errors(exc.errors())},
         )
 
     @app.exception_handler(Exception)

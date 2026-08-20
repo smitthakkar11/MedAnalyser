@@ -19,7 +19,7 @@ medical specialty for further evaluation.
 | Phase | Scope | State |
 | --- | --- | --- |
 | **1** | Foundation: repo, FastAPI, PostgreSQL + pgvector, SQLAlchemy, Alembic, React/Vite/Tailwind, Docker, health checks | ✅ Complete |
-| 2 | Authentication (email/password, Google OAuth, JWT, age 18+ verification, onboarding) | Not started |
+| **2** | Authentication: email/password (Argon2id), Google OAuth, JWT sessions, account linking, age 18+ verification, onboarding, protected routes | ✅ Complete |
 | 3 | User profile & dashboard | Not started |
 | 4 | Symptom assessment & conversational AI follow-up | Not started |
 | 5 | Medical report upload (PyMuPDF, OCR, structured extraction) | Not started |
@@ -206,6 +206,53 @@ whole browser → proxy → API → database chain visible at a glance.
 
 ---
 
+## Authentication
+
+| Method | Status |
+| --- | --- |
+| Email + password | Working (Argon2id hashing) |
+| Google Sign-In | Implemented; needs a `GOOGLE_CLIENT_ID` to enable |
+
+Sessions use a short-lived access token held **in memory** plus a long-lived
+refresh token in an **httpOnly cookie**, so no credential is reachable from
+browser script. Signing out revokes every outstanding refresh token server-side.
+
+Every account must complete onboarding, where the date of birth is checked
+against an **18+** requirement using the server's clock. Under-18 users are shown
+an age-restriction screen and nothing is stored.
+
+### Enabling Google Sign-In
+
+1. Create an OAuth 2.0 Client ID (type: *Web application*) in the
+   [Google Cloud console](https://console.cloud.google.com/apis/credentials).
+2. Add `http://localhost:5173` as an authorised JavaScript origin.
+3. Set the credentials:
+
+   ```bash
+   # backend/.env or the repo-root .env  — the SECRET stays server-side
+   GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=<your-client-secret>
+
+   # frontend/.env — the client id is public by design
+   VITE_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+   ```
+
+Without a client id the Google button renders disabled and the API returns
+`503` — the feature reports itself as unconfigured rather than failing obscurely.
+
+> **Note.** The Google flow is covered by tests using a stub verifier, and has
+> not been exercised against real Google credentials — see *Known limitations*.
+
+### API
+
+```
+POST /api/auth/signup       POST /api/auth/google        GET  /api/auth/me
+POST /api/auth/login        POST /api/auth/link-google   POST /api/auth/onboarding
+POST /api/auth/logout       POST /api/auth/refresh
+```
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -220,9 +267,13 @@ paint**, so reloading never flashes the wrong colour scheme.
 
 ## Testing and checks
 
+The backend integration tests need PostgreSQL running; they create and manage
+their own `medanalyser_test` database and skip with an explanation if it is
+unreachable.
+
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite
+pytest                     # test suite (95 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 
@@ -296,7 +347,12 @@ avoids fragile cross-directory path handling.
 
 ## Security notes
 
-- Passwords are never stored in plaintext (Phase 2 uses Argon2/bcrypt).
+- Passwords are hashed with Argon2id and never stored or logged in plaintext.
+- Validation errors are stripped of the submitted value, so a rejected password
+  is never echoed back in a response or a log.
+- Access tokens live in memory; refresh tokens are httpOnly cookies.
+- `JWT_SECRET` must be a 32+ byte non-default value in production, enforced at startup.
+- Google ID tokens are verified server-side against Google's JWKS.
 - Every user-owned resource is ownership-checked server-side; the frontend is
   never trusted to enforce access.
 - Logs contain request metadata only — never bodies, credentials, tokens, or

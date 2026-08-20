@@ -13,7 +13,13 @@ async def test_openapi_docs_available_outside_production(client: AsyncClient) ->
 
 
 async def test_openapi_docs_disabled_in_production() -> None:
-    app = create_app(Settings(environment=Environment.PRODUCTION, log_level="WARNING"))
+    app = create_app(
+        Settings(
+            environment=Environment.PRODUCTION,
+            log_level="WARNING",
+            jwt_secret="x" * 64,
+        )
+    )
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         assert (await ac.get("/openapi.json")).status_code == 404

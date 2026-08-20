@@ -34,5 +34,26 @@ def test_sync_database_url_strips_async_driver() -> None:
 
 
 def test_is_production_flag() -> None:
-    assert Settings(environment=Environment.PRODUCTION).is_production is True
+    assert Settings(environment=Environment.PRODUCTION, jwt_secret="x" * 64).is_production is True
     assert Settings(environment=Environment.DEVELOPMENT).is_production is False
+
+
+def test_production_rejects_the_placeholder_jwt_secret() -> None:
+    """Starting production with the committed default secret must fail loudly."""
+    with pytest.raises(ValidationError, match="JWT_SECRET"):
+        Settings(environment=Environment.PRODUCTION)
+
+
+def test_production_rejects_a_short_jwt_secret() -> None:
+    with pytest.raises(ValidationError, match="at least 32 bytes"):
+        Settings(environment=Environment.PRODUCTION, jwt_secret="too-short")
+
+
+def test_production_accepts_a_strong_jwt_secret() -> None:
+    settings = Settings(environment=Environment.PRODUCTION, jwt_secret="x" * 64)
+    assert settings.is_production is True
+
+
+def test_development_tolerates_the_default_secret() -> None:
+    """Developers must not need to generate a secret just to run the app."""
+    assert Settings(environment=Environment.DEVELOPMENT).jwt_secret
