@@ -1,26 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { FormAlert } from '@/components/FormAlert';
-import { FormField } from '@/components/FormField';
 import { FullPageSpinner } from '@/components/FullPageSpinner';
-import { RepeatableList } from '@/components/RepeatableList';
-import { Select } from '@/components/Select';
 import { SubmitButton } from '@/components/SubmitButton';
+import {
+  AboutYouFields,
+  AllergiesEditor,
+  ConditionsEditor,
+  EmergencyContactFields,
+  MedicationsEditor,
+  NotesField,
+} from '@/components/profile/editors';
 import { useAsync } from '@/hooks/useAsync';
 import { ApiError } from '@/services/apiClient';
 import { profileService } from '@/services/profileService';
-import {
-  ALLERGY_SEVERITY_OPTIONS,
-  CONDITION_STATUS_OPTIONS,
-  EMPTY_ALLERGY,
-  EMPTY_CONDITION,
-  EMPTY_MEDICATION,
-  SEX_AT_BIRTH_OPTIONS,
-  type AllergyInput,
-  type ConditionInput,
-  type MedicationInput,
-  type Profile,
-  type ProfileUpdate,
-} from '@/types/profile';
+import type { Profile, ProfileUpdate } from '@/types/profile';
 
 /** Strip response-only fields so the payload matches what PUT expects. */
 function toUpdate(profile: Profile): ProfileUpdate {
@@ -169,18 +162,10 @@ export function ProfilePage() {
           title="About you"
           description="Sex at birth affects laboratory reference ranges and the likelihood of many conditions, so it changes how results are read. Gender identity is recorded separately and is never used for that."
         >
-          <Select
-            label="Sex at birth"
-            value={draft.sex_at_birth}
-            options={SEX_AT_BIRTH_OPTIONS}
-            placeholder="Prefer not to answer"
-            onValueChange={(value) => patch({ sex_at_birth: value })}
-          />
-          <FormField
-            label="Gender identity (optional)"
-            value={draft.gender_identity ?? ''}
-            onChange={(event) => patch({ gender_identity: event.target.value })}
-            placeholder="How you describe your gender"
+          <AboutYouFields
+            sexAtBirth={draft.sex_at_birth}
+            genderIdentity={draft.gender_identity}
+            onChange={patch}
           />
           <div className="rounded-xl border border-ink-200 bg-ink-50/60 px-4 py-3 text-sm dark:border-ink-800 dark:bg-ink-900/60">
             <span className="text-ink-600 dark:text-ink-400">Date of birth</span>
@@ -195,36 +180,9 @@ export function ProfilePage() {
           title="Allergies"
           description="Anything you react to — medicines, foods, materials. This is checked against any medication information MedAnalyser shows you."
         >
-          <RepeatableList<AllergyInput>
+          <AllergiesEditor
             items={draft.allergies}
             onChange={(update) => patchList('allergies', update)}
-            emptyItem={EMPTY_ALLERGY}
-            addLabel="Add an allergy"
-            removeLabel="Remove allergy"
-            emptyMessage="No allergies recorded."
-            renderItem={(item, update) => (
-              <>
-                <FormField
-                  label="Substance"
-                  required
-                  value={item.substance}
-                  onChange={(event) => update({ substance: event.target.value })}
-                  placeholder="Penicillin"
-                />
-                <FormField
-                  label="Reaction (optional)"
-                  value={item.reaction ?? ''}
-                  onChange={(event) => update({ reaction: event.target.value })}
-                  placeholder="Hives, swelling"
-                />
-                <Select
-                  label="Severity"
-                  value={item.severity}
-                  options={ALLERGY_SEVERITY_OPTIONS}
-                  onValueChange={(severity) => update({ severity: severity ?? 'unknown' })}
-                />
-              </>
-            )}
           />
         </Section>
 
@@ -232,48 +190,9 @@ export function ProfilePage() {
           title="Existing conditions"
           description="Conditions you have been diagnosed with. Recorded as your own account of your history — MedAnalyser keeps that separate from anything it concludes itself."
         >
-          <RepeatableList<ConditionInput>
+          <ConditionsEditor
             items={draft.conditions}
             onChange={(update) => patchList('conditions', update)}
-            emptyItem={EMPTY_CONDITION}
-            addLabel="Add a condition"
-            removeLabel="Remove condition"
-            emptyMessage="No conditions recorded."
-            renderItem={(item, update) => (
-              <>
-                <FormField
-                  label="Condition"
-                  required
-                  value={item.name}
-                  onChange={(event) => update({ name: event.target.value })}
-                  placeholder="Asthma"
-                />
-                <Select
-                  label="Status"
-                  value={item.status}
-                  options={CONDITION_STATUS_OPTIONS}
-                  onValueChange={(statusValue) => update({ status: statusValue ?? 'active' })}
-                />
-                <FormField
-                  label="Year diagnosed (optional)"
-                  type="number"
-                  inputMode="numeric"
-                  min={1900}
-                  max={new Date().getFullYear()}
-                  value={item.diagnosed_year ?? ''}
-                  onChange={(event) =>
-                    update({
-                      diagnosed_year: event.target.value ? Number(event.target.value) : null,
-                    })
-                  }
-                />
-                <FormField
-                  label="Notes (optional)"
-                  value={item.notes ?? ''}
-                  onChange={(event) => update({ notes: event.target.value })}
-                />
-              </>
-            )}
           />
         </Section>
 
@@ -281,52 +200,9 @@ export function ProfilePage() {
           title="Current medications"
           description="What you take, exactly as prescribed to you. MedAnalyser records this as written — it never suggests, changes or calculates a dose."
         >
-          <RepeatableList<MedicationInput>
+          <MedicationsEditor
             items={draft.medications}
             onChange={(update) => patchList('medications', update)}
-            emptyItem={EMPTY_MEDICATION}
-            addLabel="Add a medication"
-            removeLabel="Remove medication"
-            emptyMessage="No medications recorded."
-            renderItem={(item, update) => (
-              <>
-                <FormField
-                  label="Medication"
-                  required
-                  value={item.name}
-                  onChange={(event) => update({ name: event.target.value })}
-                  placeholder="Salbutamol"
-                />
-                <FormField
-                  label="Dose (optional)"
-                  value={item.dosage ?? ''}
-                  onChange={(event) => update({ dosage: event.target.value })}
-                  placeholder="100 mcg"
-                />
-                <FormField
-                  label="How often (optional)"
-                  value={item.frequency ?? ''}
-                  onChange={(event) => update({ frequency: event.target.value })}
-                  placeholder="Twice daily"
-                />
-                <FormField
-                  label="Started (optional)"
-                  type="date"
-                  max={new Date().toISOString().slice(0, 10)}
-                  value={item.started_on ?? ''}
-                  onChange={(event) => update({ started_on: event.target.value || null })}
-                />
-                <label className="flex items-center gap-3 text-sm font-medium sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    checked={item.is_current}
-                    onChange={(event) => update({ is_current: event.target.checked })}
-                    className="size-4 rounded border-ink-300 dark:border-ink-700"
-                  />
-                  I am still taking this
-                </label>
-              </>
-            )}
           />
         </Section>
 
@@ -334,24 +210,11 @@ export function ProfilePage() {
           title="Emergency contact"
           description="Who to contact if you needed help. Stored with your account and never shared."
         >
-          <FormField
-            label="Name"
-            value={draft.emergency_contact_name ?? ''}
-            onChange={(event) => patch({ emergency_contact_name: event.target.value })}
-          />
-          <FormField
-            label="Relationship"
-            value={draft.emergency_contact_relationship ?? ''}
-            onChange={(event) =>
-              patch({ emergency_contact_relationship: event.target.value })
-            }
-            placeholder="Partner, sibling, friend"
-          />
-          <FormField
-            label="Phone"
-            type="tel"
-            value={draft.emergency_contact_phone ?? ''}
-            onChange={(event) => patch({ emergency_contact_phone: event.target.value })}
+          <EmergencyContactFields
+            name={draft.emergency_contact_name}
+            relationship={draft.emergency_contact_relationship}
+            phone={draft.emergency_contact_phone}
+            onChange={patch}
           />
         </Section>
 
@@ -359,15 +222,7 @@ export function ProfilePage() {
           title="Anything else"
           description="Context that does not fit above but that a clinician would want to know."
         >
-          <textarea
-            aria-label="Additional notes"
-            rows={5}
-            maxLength={2000}
-            value={draft.notes ?? ''}
-            onChange={(event) => patch({ notes: event.target.value })}
-            className="w-full rounded-xl border border-ink-300 bg-ink-0 px-4 py-3 text-base transition placeholder:text-ink-400 focus:outline-none focus-visible:border-ink-950 focus-visible:ring-2 focus-visible:ring-ink-950/15 dark:border-ink-700 dark:bg-ink-900 dark:focus-visible:border-ink-0 dark:focus-visible:ring-ink-0/20"
-            placeholder="Recent surgery, family history, anything you think matters."
-          />
+          <NotesField value={draft.notes} onChange={patch} />
         </Section>
 
         <div className="sticky bottom-0 border-t border-ink-200 bg-ink-0/90 py-5 backdrop-blur-md dark:border-ink-800 dark:bg-ink-950/90">

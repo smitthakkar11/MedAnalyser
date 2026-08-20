@@ -292,6 +292,31 @@ from the verified token, never from a request body or path parameter. Both
 endpoints require `OnboardedUser`, so an account that has not passed the age
 check cannot hold medical data at all.
 
+### Onboarding as a wizard
+
+Onboarding collects the whole profile, not just the date of birth, in six steps:
+
+1. **Date of birth** — the only required step. It is the age gate, so it cannot
+   be skipped, and it is saved through `POST /api/auth/onboarding` before the
+   flow continues.
+2–6. Sex/gender, allergies, conditions, medications, emergency contact and
+   notes — each with *Skip this question* and *Skip the rest for now*.
+
+The optional answers accumulate in a client-side draft and are written with a
+single `PUT /api/profile` when the user finishes or leaves early, so a partial
+walk-through never produces a partially-saved profile.
+
+Two consequences of `PUT` being a full replacement:
+
+* A user resuming the wizard (date of birth already recorded) **must** have
+  their existing profile loaded into the draft first. Skipping from a blank
+  draft would delete everything they had previously saved — this shipped as a
+  bug and is now covered by tests on both the contract and the round trip.
+* The form is rendered only once that load resolves.
+
+Field editors live in `components/profile/editors.tsx` and are shared by the
+wizard and the profile page, so the two cannot drift in labelling or behaviour.
+
 ### Recorded, not interpreted
 
 Medication dose and frequency are free text, stored exactly as the user reports

@@ -348,3 +348,69 @@ async def test_deleting_a_user_removes_their_medical_data(
 
     for model in (Allergy, Condition, Medication):
         assert await db_session.scalar(select(func.count()).select_from(model)) == 0
+
+
+async def test_a_blank_put_erases_the_profile(api_client: AsyncClient) -> None:
+    """PUT replaces the whole document — including with nothing.
+
+    This is the intended contract, and it is exactly why any client that offers
+    a "save" must first load the existing profile into its draft. The onboarding
+    wizard learned this the hard way: resuming it with an empty draft and
+    saving destroyed the user's records.
+    """
+    token = await _onboarded(api_client)
+    await api_client.put(
+        PROFILE,
+        headers=_auth(token),
+        json={
+            "sex_at_birth": "male",
+            "conditions": [{"name": "Type 2 diabetes"}],
+            "medications": [{"name": "Metformin"}],
+        },
+    )
+
+    response = await api_client.put(PROFILE, headers=_auth(token), json={})
+
+    assert response.status_code == 200
+    assert response.json()["sex_at_birth"] is None
+    assert response.json()["conditions"] == []
+    assert response.json()["medications"] == []
+
+
+async def test_a_round_trip_through_get_then_put_preserves_everything(
+    api_client: AsyncClient,
+) -> None:
+    """The safe client pattern: GET, edit, PUT back.
+
+    Guards the onboarding/profile contract — whatever `GET` returns must be
+    accepted by `PUT` and leave the profile unchanged. If a field ever stops
+    round-tripping (returned by `GET` but dropped on write), this fails.
+    """
+    token = await _onboarded(api_client)
+    original = {
+        "sex_at_birth": "female",
+        "gender_identity": "Woman",
+        "notes": "Non-smoker.",
+        "emergency_contact_name": "Grace Hopper",
+        "emergency_contact_relationship": "Sister",
+        "emergency_contact_phone": "+44 20 7946 0000",
+        "allergies": [{"substance": "Penicillin", "reaction": "Hives", "severity": "severe"}],
+        "conditions": [{"name": "Asthma", "status": "managed", "diagnosed_year": 2005}],
+        "medications": [{"name": "Salbutamol", "dosage": "100 mcg", "frequency": "As needed"}],
+    }
+    await api_client.put(PROFILE, headers=_auth(token), json=original)
+
+    fetched = (await api_client.get(PROFILE, headers=_auth(token))).json()
+    # Send back exactly what was read, minus the response-only fields.
+    for response_only in ("date_of_birth", "age", "completeness"):
+        fetched.pop(response_only)
+    replayed = await api_client.put(PROFILE, headers=_auth(token), json=fetched)
+
+    assert replayed.status_code == 200
+    body = replayed.json()
+    assert body["sex_at_birth"] == "female"
+    assert body["gender_identity"] == "Woman"
+    assert [a["substance"] for a in body["allergies"]] == ["Penicillin"]
+    assert [c["name"] for c in body["conditions"]] == ["Asthma"]
+    assert [m["name"] for m in body["medications"]] == ["Salbutamol"]
+    assert body["completeness"] == 100

@@ -217,9 +217,13 @@ Sessions use a short-lived access token held **in memory** plus a long-lived
 refresh token in an **httpOnly cookie**, so no credential is reachable from
 browser script. Signing out revokes every outstanding refresh token server-side.
 
-Every account must complete onboarding, where the date of birth is checked
-against an **18+** requirement using the server's clock. Under-18 users are shown
-an age-restriction screen and nothing is stored.
+Every new account goes through a six-step onboarding wizard. The first step,
+date of birth, is **required**: it is checked against an **18+** requirement
+using the server's clock, and under-18 users are shown an age-restriction screen
+with nothing stored. Every step after it — sex/gender, allergies, conditions,
+medications, emergency contact — is **optional and skippable**, either one
+question at a time or all at once, and can be filled in later from the profile
+page.
 
 ### Enabling Google Sign-In
 
@@ -295,7 +299,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (126 tests)
+pytest                     # test suite (128 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 
