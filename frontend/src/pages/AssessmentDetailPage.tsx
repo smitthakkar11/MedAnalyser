@@ -40,7 +40,7 @@ export function AssessmentDetailPage() {
   if (status === 'loading') return <FullPageSpinner label="Loading assessment" />;
   if (status === 'error') {
     return (
-      <div className="max-w-lg space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
         <FormAlert message={error.message} />
         <Link to="/history" className="text-sm font-semibold underline">
           Back to history
@@ -57,7 +57,7 @@ export function AssessmentDetailPage() {
         : 'No';
 
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="mx-auto max-w-3xl space-y-10">
       <header>
         <p className="text-sm text-ink-500">{formatDate(data.created_at)}</p>
         <h1 className="mt-2 text-headline">

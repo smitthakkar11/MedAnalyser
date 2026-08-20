@@ -21,6 +21,13 @@ from app.models.profile import (
     SexAtBirth,
     UserProfile,
 )
+from app.models.report import (
+    ExtractionMethod,
+    MedicalReport,
+    ReportStatus,
+    ReportValue,
+    ValueFlag,
+)
 from app.models.user import OAuthAccount, User
 
 __all__ = [
@@ -32,12 +39,17 @@ __all__ = [
     "Base",
     "Condition",
     "ConditionStatus",
+    "ExtractionMethod",
+    "MedicalReport",
     "Medication",
     "MessageRole",
     "OAuthAccount",
+    "ReportStatus",
+    "ReportValue",
     "SexAtBirth",
     "TimestampMixin",
     "UUIDPrimaryKeyMixin",
     "User",
     "UserProfile",
+    "ValueFlag",
 ]

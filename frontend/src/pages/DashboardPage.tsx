@@ -31,7 +31,7 @@ export function DashboardPage() {
 
   if (status === 'error') {
     return (
-      <div className="max-w-lg space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
         <FormAlert message={error.message} />
         <button
           type="button"
@@ -140,7 +140,15 @@ export function DashboardPage() {
         </div>
         <EmptyState
           title="No reports yet"
-          body="Uploading a PDF lab report, and having its values extracted automatically, arrives with medical report processing."
+          body="Upload a PDF lab report and MedAnalyser will read its values off the page."
+          action={
+            <Link
+              to="/reports"
+              className="inline-flex rounded-full border border-ink-300 px-5 py-2.5 text-sm font-semibold transition hover:border-ink-950 dark:border-ink-700 dark:hover:border-ink-0"
+            >
+              Upload a report
+            </Link>
+          }
         />
       </section>
 

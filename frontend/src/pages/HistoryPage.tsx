@@ -18,7 +18,7 @@ export function HistoryPage() {
   if (status === 'loading') return <FullPageSpinner label="Loading your history" />;
   if (status === 'error') {
     return (
-      <div className="max-w-lg space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
         <FormAlert message={error.message} />
         <button
           type="button"
@@ -32,7 +32,7 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-headline">Your assessments</h1>

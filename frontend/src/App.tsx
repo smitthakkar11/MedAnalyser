@@ -13,6 +13,8 @@ import { AssessmentDetailPage } from '@/pages/AssessmentDetailPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { HistoryPage } from '@/pages/HistoryPage';
 import { NewAssessmentPage } from '@/pages/NewAssessmentPage';
+import { ReportDetailPage } from '@/pages/ReportDetailPage';
+import { ReportsPage } from '@/pages/ReportsPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -59,6 +61,8 @@ export default function App() {
                 <Route path="/assessment/new" element={<NewAssessmentPage />} />
                 <Route path="/assessment/:id" element={<AssessmentDetailPage />} />
                 <Route path="/history" element={<HistoryPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/reports/:id" element={<ReportDetailPage />} />
               </Route>
             </Route>
 

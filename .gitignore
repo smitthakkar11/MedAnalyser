@@ -22,9 +22,11 @@ dist-ssr/
 .env.*
 !.env.example
 
-# Local file storage (uploaded medical reports — never commit)
-storage/
-backend/storage/
+# Uploaded medical reports — never commit. Anchored with a leading slash so
+# the rule cannot also swallow source directories named `storage`, such as
+# backend/app/services/storage/.
+/storage/
+/backend/storage/
 
 # Editors / OS
 .DS_Store

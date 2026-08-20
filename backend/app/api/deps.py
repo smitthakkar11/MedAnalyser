@@ -16,6 +16,8 @@ from app.services.auth.google import GoogleTokenVerifier, build_google_verifier
 from app.services.auth.service import AuthService, OnboardingRequiredError
 from app.services.ml.condition_prediction.inference import ConditionPredictionService
 from app.services.ml.condition_prediction.model_loader import ModelUnavailableError
+from app.services.storage.base import StorageService
+from app.services.storage.factory import build_storage_service
 
 
 def get_app_settings(request: Request) -> Settings:
@@ -86,6 +88,21 @@ def get_condition_predictor(request: Request) -> ConditionPredictionService | No
 
 
 ConditionPredictor = Annotated[ConditionPredictionService | None, Depends(get_condition_predictor)]
+
+
+def get_storage_service(request: Request, settings: AppSettings) -> StorageService:
+    """Return the configured storage provider.
+
+    A provider placed on `app.state` wins, which is how tests point uploads at
+    a temporary directory instead of the developer's storage root.
+    """
+    override = getattr(request.app.state, "storage_service", None)
+    if override is not None:
+        return override
+    return build_storage_service(settings)
+
+
+Storage = Annotated[StorageService, Depends(get_storage_service)]
 
 
 async def get_current_user(

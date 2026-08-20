@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/history', label: 'Assessments' },
+  { to: '/reports', label: 'Reports' },
   { to: '/profile', label: 'Profile' },
 ] as const;
 

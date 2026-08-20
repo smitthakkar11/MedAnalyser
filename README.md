@@ -23,7 +23,7 @@ medical specialty for further evaluation.
 | **3** | User profile (allergies, conditions, medications, emergency contact) and dashboard | ✅ Complete |
 | **4** | ML foundation: dataset, preprocessing, model comparison, evaluation, inference service | ✅ Complete |
 | **5** | Symptom processing & assessment engine: NLP extraction, follow-up state machine, prediction, persistence | ✅ Complete |
-| 6 | Medical report/PDF + OCR processing | Not started |
+| **6** | Medical report upload: PDF text extraction, OCR fallback, lab value extraction | ✅ Complete |
 | 7 | Combine report/lab features with the ML assessment | Not started |
 | 8 | Safety / red-flag engine | Not started |
 | 9 | Doctor-specialty recommendation | Not started |
@@ -85,6 +85,7 @@ See [`docs/architecture.md`](docs/architecture.md) for detail.
 - **Node.js 20+** (developed on 22)
 - **PostgreSQL 16+ with the `pgvector` extension** — via Docker (easiest) or Homebrew
   (use `postgresql@17` on Homebrew; see below)
+- **Tesseract** — for OCR of scanned reports (`brew install tesseract`)
 - **Docker Desktop** — optional, but the simplest way to get PostgreSQL + pgvector
 
 ---
@@ -339,6 +340,38 @@ are uncalibrated relative outputs and a number reads as a clinical probability.
 
 ---
 
+## Medical reports
+
+```
+PDF upload → PyMuPDF text layer → OCR fallback per page → lab values
+```
+
+| Endpoint | |
+| --- | --- |
+| `POST /api/reports` | upload a PDF; it is validated and processed immediately |
+| `GET /api/reports` · `GET /api/reports/{id}` | list and detail |
+| `GET /api/reports/{id}/file` | download the original |
+| `DELETE /api/reports/{id}` | remove it and its stored file |
+
+Values are **extracted from the document, never inferred**. Abnormality is
+judged only against a reference range printed on the report itself — MedAnalyser
+supplies none of its own, because normal ranges vary by laboratory, assay, age
+and sex. An unrecognised unit is kept exactly as printed and flagged rather than
+converted.
+
+Scanned reports with no text layer fall back to Tesseract OCR, decided per page.
+The method used is shown in the UI, since OCR output is less reliable.
+
+Analyte names and unit spellings live in
+[`lab_analytes.json`](backend/app/services/reports/data/lab_analytes.json) — 35
+analytes, extend it as data rather than code.
+
+**OCR needs the Tesseract binary:** `brew install tesseract` (Linux:
+`apt install tesseract-ocr`). Without it, digital PDFs still work and scans
+report that no text was found.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -359,7 +392,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (264 tests)
+pytest                     # test suite (354 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

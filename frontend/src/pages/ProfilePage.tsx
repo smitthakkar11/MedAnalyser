@@ -76,7 +76,7 @@ export function ProfilePage() {
 
   if (status === 'error') {
     return (
-      <div className="max-w-lg space-y-4">
+      <div className="mx-auto max-w-lg space-y-4">
         <FormAlert message={error.message} />
         <button
           type="button"
@@ -132,7 +132,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="max-w-5xl">
+    <div className="mx-auto max-w-5xl">
       <header className="pb-2">
         <h1 className="text-headline">Your medical profile</h1>
         <p className="mt-3 max-w-2xl text-lg text-ink-600 dark:text-ink-400">

@@ -1,0 +1,230 @@
+{
+  "_readme": [
+    "Canonical laboratory analytes and how they appear on real reports.",
+    "",
+    "`aliases` are matched case-insensitively against the label to the left of",
+    "a value. The canonical key itself is always matched, so it need not be",
+    "repeated. Longest alias wins, so 'total bilirubin' beats 'bilirubin'.",
+    "",
+    "`unit` is the unit this project stores values in. `unit_aliases` maps the",
+    "spellings seen on reports onto it. A value whose unit is present but NOT a",
+    "known alias is kept with its original unit and flagged as unconverted —",
+    "silently treating mg/dL as g/dL would corrupt the number.",
+    "",
+    "NOTE ON REFERENCE RANGES: this file deliberately contains none. Normal",
+    "ranges vary by laboratory, assay, age and sex. Abnormality is only ever",
+    "determined from a range printed on the report itself."
+  ],
+  "analytes": {
+    "hemoglobin": {
+      "display": "Haemoglobin",
+      "aliases": ["haemoglobin", "hb", "hgb", "haemoglobin (hb)", "hemoglobin (hb)"],
+      "unit": "g/dL",
+      "unit_aliases": ["g/dl", "gm/dl", "g / dl", "gms/dl", "g%"]
+    },
+    "wbc": {
+      "display": "White blood cells",
+      "aliases": ["white blood cell count", "white blood cells", "wbc count", "leucocyte count", "leukocyte count", "total leucocyte count", "tlc", "total wbc"],
+      "unit": "/uL",
+      "unit_aliases": ["/ul", "/µl", "/μl", "cells/ul", "cells/µl", "cells/cumm", "cumm", "/cumm", "per cumm", "/mm3", "cells/mm3"]
+    },
+    "platelets": {
+      "display": "Platelets",
+      "aliases": ["platelet count", "platelet", "plt", "thrombocyte count"],
+      "unit": "/uL",
+      "unit_aliases": ["/ul", "/µl", "/μl", "cells/ul", "cells/cumm", "cumm", "/cumm", "per cumm", "/mm3", "cells/mm3"]
+    },
+    "rbc": {
+      "display": "Red blood cells",
+      "aliases": ["red blood cell count", "red blood cells", "rbc count", "erythrocyte count"],
+      "unit": "million/uL",
+      "unit_aliases": ["million/ul", "mill/ul", "10^6/ul", "x10^6/ul", "m/ul"]
+    },
+    "hematocrit": {
+      "display": "Haematocrit",
+      "aliases": ["haematocrit", "hct", "pcv", "packed cell volume"],
+      "unit": "%",
+      "unit_aliases": ["%", "percent"]
+    },
+    "mcv": {
+      "display": "Mean corpuscular volume",
+      "aliases": ["mean corpuscular volume", "mean cell volume"],
+      "unit": "fL",
+      "unit_aliases": ["fl", "femtolitres", "femtoliters"]
+    },
+    "glucose_fasting": {
+      "display": "Fasting glucose",
+      "aliases": ["fasting blood glucose", "fasting blood sugar", "fbs", "fasting plasma glucose", "fasting glucose"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl", "mg / dl"]
+    },
+    "glucose_random": {
+      "display": "Random glucose",
+      "aliases": ["random blood sugar", "rbs", "random blood glucose", "random glucose"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl"]
+    },
+    "hba1c": {
+      "display": "HbA1c",
+      "aliases": ["glycated haemoglobin", "glycated hemoglobin", "glycosylated haemoglobin", "hb a1c", "a1c"],
+      "unit": "%",
+      "unit_aliases": ["%", "percent"]
+    },
+    "creatinine": {
+      "display": "Creatinine",
+      "aliases": ["serum creatinine", "s. creatinine", "creat"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl"]
+    },
+    "urea": {
+      "display": "Urea",
+      "aliases": ["blood urea", "serum urea", "bun", "blood urea nitrogen"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl"]
+    },
+    "bilirubin_total": {
+      "display": "Total bilirubin",
+      "aliases": ["total bilirubin", "serum bilirubin total", "t. bilirubin", "bilirubin"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl"]
+    },
+    "bilirubin_direct": {
+      "display": "Direct bilirubin",
+      "aliases": ["direct bilirubin", "conjugated bilirubin", "d. bilirubin"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl", "mgs/dl"]
+    },
+    "alt": {
+      "display": "ALT (SGPT)",
+      "aliases": ["sgpt", "alanine aminotransferase", "alt (sgpt)", "sgpt (alt)", "alanine transaminase"],
+      "unit": "U/L",
+      "unit_aliases": ["u/l", "iu/l", "units/l"]
+    },
+    "ast": {
+      "display": "AST (SGOT)",
+      "aliases": ["sgot", "aspartate aminotransferase", "ast (sgot)", "sgot (ast)", "aspartate transaminase"],
+      "unit": "U/L",
+      "unit_aliases": ["u/l", "iu/l", "units/l"]
+    },
+    "alkaline_phosphatase": {
+      "display": "Alkaline phosphatase",
+      "aliases": ["alp", "alk phos", "serum alkaline phosphatase"],
+      "unit": "U/L",
+      "unit_aliases": ["u/l", "iu/l", "units/l"]
+    },
+    "albumin": {
+      "display": "Albumin",
+      "aliases": ["serum albumin", "s. albumin"],
+      "unit": "g/dL",
+      "unit_aliases": ["g/dl", "gm/dl"]
+    },
+    "total_protein": {
+      "display": "Total protein",
+      "aliases": ["total proteins", "serum total protein", "protein total"],
+      "unit": "g/dL",
+      "unit_aliases": ["g/dl", "gm/dl"]
+    },
+    "tsh": {
+      "display": "TSH",
+      "aliases": ["thyroid stimulating hormone", "thyroid-stimulating hormone", "s. tsh"],
+      "unit": "uIU/mL",
+      "unit_aliases": ["uiu/ml", "µiu/ml", "μiu/ml", "miu/l", "mIU/L"]
+    },
+    "t3": {
+      "display": "T3",
+      "aliases": ["triiodothyronine", "total t3", "tri-iodothyronine"],
+      "unit": "ng/dL",
+      "unit_aliases": ["ng/dl"]
+    },
+    "t4": {
+      "display": "T4",
+      "aliases": ["thyroxine", "total t4"],
+      "unit": "ug/dL",
+      "unit_aliases": ["ug/dl", "µg/dl", "μg/dl", "mcg/dl"]
+    },
+    "cholesterol_total": {
+      "display": "Total cholesterol",
+      "aliases": ["total cholesterol", "serum cholesterol", "cholesterol"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    },
+    "hdl": {
+      "display": "HDL cholesterol",
+      "aliases": ["hdl cholesterol", "hdl-c", "high density lipoprotein"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    },
+    "ldl": {
+      "display": "LDL cholesterol",
+      "aliases": ["ldl cholesterol", "ldl-c", "low density lipoprotein"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    },
+    "triglycerides": {
+      "display": "Triglycerides",
+      "aliases": ["serum triglycerides", "tg"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    },
+    "crp": {
+      "display": "C-reactive protein",
+      "aliases": ["c-reactive protein", "c reactive protein", "crp quantitative", "hs-crp"],
+      "unit": "mg/L",
+      "unit_aliases": ["mg/l"]
+    },
+    "esr": {
+      "display": "ESR",
+      "aliases": ["erythrocyte sedimentation rate", "sedimentation rate"],
+      "unit": "mm/hr",
+      "unit_aliases": ["mm/hr", "mm/1st hr", "mm/hour", "mm hr"]
+    },
+    "vitamin_d": {
+      "display": "Vitamin D",
+      "aliases": ["25-hydroxy vitamin d", "vitamin d3", "25 oh vitamin d", "vit d"],
+      "unit": "ng/mL",
+      "unit_aliases": ["ng/ml"]
+    },
+    "vitamin_b12": {
+      "display": "Vitamin B12",
+      "aliases": ["vitamin b-12", "cobalamin", "vit b12", "b12"],
+      "unit": "pg/mL",
+      "unit_aliases": ["pg/ml"]
+    },
+    "ferritin": {
+      "display": "Ferritin",
+      "aliases": ["serum ferritin", "s. ferritin"],
+      "unit": "ng/mL",
+      "unit_aliases": ["ng/ml"]
+    },
+    "iron": {
+      "display": "Serum iron",
+      "aliases": ["serum iron", "s. iron"],
+      "unit": "ug/dL",
+      "unit_aliases": ["ug/dl", "µg/dl", "μg/dl", "mcg/dl"]
+    },
+    "sodium": {
+      "display": "Sodium",
+      "aliases": ["serum sodium", "na", "na+"],
+      "unit": "mmol/L",
+      "unit_aliases": ["mmol/l", "meq/l"]
+    },
+    "potassium": {
+      "display": "Potassium",
+      "aliases": ["serum potassium", "k", "k+"],
+      "unit": "mmol/L",
+      "unit_aliases": ["mmol/l", "meq/l"]
+    },
+    "calcium": {
+      "display": "Calcium",
+      "aliases": ["serum calcium", "total calcium", "ca"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    },
+    "uric_acid": {
+      "display": "Uric acid",
+      "aliases": ["serum uric acid", "s. uric acid"],
+      "unit": "mg/dL",
+      "unit_aliases": ["mg/dl"]
+    }
+  }
+}

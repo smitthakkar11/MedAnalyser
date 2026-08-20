@@ -69,7 +69,7 @@ export function NewAssessmentPage() {
   // ------------------------------------------------------------- step one
   if (!assessment) {
     return (
-      <div className="max-w-2xl space-y-8">
+      <div className="mx-auto max-w-2xl space-y-8">
         <header>
           <h1 className="text-headline">What's troubling you?</h1>
           <p className="mt-3 text-lg text-ink-600 dark:text-ink-400">
@@ -129,7 +129,7 @@ export function NewAssessmentPage() {
   const question = assessment.next_question;
 
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">
           {question ? 'A few more details' : 'Ready to analyse'}

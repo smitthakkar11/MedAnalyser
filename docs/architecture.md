@@ -452,7 +452,64 @@ checking after the fact, so a missing assessment and someone else's assessment
 are indistinguishable — the endpoint returns 404 either way and never confirms
 that an id exists.
 
-## 14. Safety architecture (planned, Phase 8)
+## 14. Medical report processing
+
+    PDF → PyMuPDF text layer → (per page, if empty) OCR → lab value extraction
+
+### Storage behind an interface
+
+Business logic depends on `StorageService`, never on the filesystem, so moving
+uploaded reports to object storage is a new provider plus one environment
+variable. Two properties of the local provider matter more than the interface:
+
+* **The stored name is generated, never the user's.** An uploaded filename is
+  attacker-controlled — path separators, traversal, null bytes. The original is
+  kept in the database as a display label and never touches the filesystem.
+* **Keys are re-validated on read.** Even a corrupted database row cannot make
+  the API read outside its root: the key must match the generated shape *and*
+  the resolved path must still be under the root.
+
+### Upload validation
+
+The one endpoint that accepts arbitrary bytes from the internet, so a file is
+checked four ways: declared content type, extension, size, and **actual magic
+bytes**. A declared `application/pdf` is a claim, not evidence. The body is read
+with a cap rather than trusting the client's `content-length`.
+
+Uploads are deduplicated per user by SHA-256; a refused duplicate deletes the
+copy it just wrote rather than leaving an orphan.
+
+### OCR fallback is per page, not per document
+
+Most lab reports are generated digitally and carry an exact text layer. Scans
+have none. The fallback is decided **per page**, because a report whose results
+table is a scanned image pasted into a digital letterhead would otherwise lose
+exactly the part that matters. Which path ran is recorded and shown to the user:
+OCR output is materially less reliable, and someone checking values deserves to
+know which they are reading.
+
+### Extracted, never inferred
+
+Two rules govern the lab extractor, and both are enforced in code:
+
+* **No value is invented.** A number that is not on the page is absent from the
+  output. A label with no result yields nothing.
+* **No reference range is invented.** Normal ranges vary by laboratory, assay,
+  age and sex, so abnormality is judged *only* against a range printed on the
+  report itself. Where none is printed, the value is stored and left unflagged
+  rather than compared with a hard-coded number. A test asserts the analyte data
+  file contains no ranges at all.
+
+Unrecognised units are kept verbatim and flagged rather than normalised —
+silently treating mg/dL as g/dL would change a value a thousandfold while
+looking perfectly correct. Analyte names and unit spellings live in a JSON data
+file; tests assert no duplicate keys and no alias owned by two analytes, since
+either would silently attribute a value to the wrong test.
+
+Values are read line by line, because lab reports are tabular and scanning
+across lines pairs a label with the next row's number.
+
+## 15. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can
