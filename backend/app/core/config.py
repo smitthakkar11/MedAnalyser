@@ -11,9 +11,10 @@ from __future__ import annotations
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import Field, PostgresDsn, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 #: Placeholder secret shipped in `.env.example`; rejected in production.
 DEFAULT_JWT_SECRET = "change-me-in-production-use-a-long-random-value"
@@ -76,7 +77,10 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
 
     # --- CORS ---------------------------------------------------------------
-    cors_origins: list[str] = Field(
+    # `NoDecode` stops pydantic-settings from JSON-parsing this value when it
+    # comes from a .env file or the environment; without it a plain
+    # comma-separated list raises before `_split_cors_origins` ever runs.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
