@@ -53,6 +53,38 @@ async def check_database(session: AsyncSession) -> DependencyHealth:
     return DependencyHealth(name="database", status=ComponentStatus.OK, latency_ms=latency_ms)
 
 
+def check_condition_model() -> DependencyHealth:
+    """Report whether the trained condition model is loaded and usable.
+
+    Degraded rather than unavailable when absent: the rest of the application —
+    accounts, profiles, history — works fine without it, and a fresh checkout
+    has no artifacts until training has been run once.
+    """
+    started = time.perf_counter()
+    try:
+        from app.services.ml.condition_prediction.model_loader import get_condition_model
+
+        model = get_condition_model()
+    except Exception as exc:  # noqa: BLE001 - health probes report, never raise
+        logger.warning("Condition model unavailable", extra={"error": type(exc).__name__})
+        return DependencyHealth(
+            name="condition_model",
+            status=ComponentStatus.DEGRADED,
+            detail=(
+                "Trained model not loaded. Run "
+                "`python -m ml.training.train_condition_model` to produce artifacts."
+            ),
+            latency_ms=round((time.perf_counter() - started) * 1000, 2),
+        )
+
+    return DependencyHealth(
+        name="condition_model",
+        status=ComponentStatus.OK,
+        detail=f"{model.name} {model.version} ({len(model.labels)} conditions)",
+        latency_ms=round((time.perf_counter() - started) * 1000, 2),
+    )
+
+
 def aggregate_status(dependencies: list[DependencyHealth]) -> ComponentStatus:
     """Reduce dependency statuses to a single overall status (worst wins)."""
     statuses = {dep.status for dep in dependencies}

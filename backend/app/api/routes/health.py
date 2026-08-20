@@ -12,7 +12,11 @@ from fastapi import APIRouter, Response, status
 from app import __version__
 from app.api.deps import AppSettings, DbSession
 from app.schemas.health import ComponentStatus, HealthResponse, ReadinessResponse
-from app.services.health import aggregate_status, check_database
+from app.services.health import (
+    aggregate_status,
+    check_condition_model,
+    check_database,
+)
 
 router = APIRouter(tags=["health"])
 
@@ -40,7 +44,7 @@ async def readiness(
     response: Response,
 ) -> ReadinessResponse:
     """Report whether every dependency required to serve traffic is available."""
-    dependencies = [await check_database(session)]
+    dependencies = [await check_database(session), check_condition_model()]
     overall = aggregate_status(dependencies)
 
     if overall is ComponentStatus.UNAVAILABLE:

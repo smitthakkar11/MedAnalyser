@@ -32,5 +32,10 @@ backend/storage/
 .vscode/
 *.swp
 
+# ML — raw data and build outputs. Reports and metadata ARE committed so the
+# evaluation can be reviewed without retraining.
+ml/data/
+ml/artifacts/*.joblib
+
 # Logs
 *.log

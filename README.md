@@ -21,10 +21,11 @@ medical specialty for further evaluation.
 | **1** | Foundation: repo, FastAPI, PostgreSQL + pgvector, SQLAlchemy, Alembic, React/Vite/Tailwind, Docker, health checks | ✅ Complete |
 | **2** | Authentication: email/password (Argon2id), Google OAuth, JWT sessions, account linking, age 18+ verification, onboarding, protected routes | ✅ Complete |
 | **3** | User profile (allergies, conditions, medications, emergency contact) and dashboard | ✅ Complete |
-| 4 | Symptom assessment & conversational AI follow-up | Not started |
+| **4** | ML foundation: dataset, preprocessing, model comparison, evaluation, inference service | ✅ Complete |
+| 5 | Symptom assessment, NLP symptom extraction & rule-based follow-up engine | Not started |
 | 5 | Medical report upload (PyMuPDF, OCR, structured extraction) | Not started |
-| 6 | RAG: knowledge ingestion, embeddings, pgvector retrieval | Not started |
-| 7 | Local AI: `LLMService` / `OllamaLLM` | Not started |
+| 6 | Medical knowledge base (treatment & medication information) | Not started |
+| 7 | Specialty prediction model | Not started |
 | 8 | Safety red-flag engine, treatment & medication information, specialty recommendation | Not started |
 | 9 | Doctor discovery | Not started |
 | 10 | Assessment history & medical timeline | Not started |
@@ -38,7 +39,7 @@ medical specialty for further evaluation.
 **Frontend** — React 19, Vite 7, TypeScript (strict), Tailwind CSS v4, React Router 7, Axios, Recharts, light/dark theming
 **Backend** — Python 3.11, FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic
 **Database** — PostgreSQL 16 with pgvector
-**AI** — provider-abstracted (`LLMService`); default implementation targets Ollama running locally
+**ML** — scikit-learn, XGBoost, NumPy, pandas, joblib. Models are trained locally from a public dataset; **no external or paid AI API is used**
 **Infrastructure** — Docker, docker compose
 
 ---
@@ -58,16 +59,16 @@ medical specialty for further evaluation.
  Authentication      Assessment       Doctor Discovery
         │                 │
         ▼                 ▼
- PostgreSQL         AI Service Layer
+ PostgreSQL         ML Service Layer
         │                 │
-        │        ┌────────┼─────────┐
-        │        ▼        ▼         ▼
-        │      LLM      RAG      Safety
-        │        │        │         │
-        │        └────────┼─────────┘
+        │        ┌────────┼──────────┐
+        │        ▼        ▼          ▼
+        │   Condition   Safety    Specialty
+        │    model      rules      mapping
+        │        │        │          │
+        │        └────────┼──────────┘
         │                 │
         └───────────── PostgreSQL
-                       + pgvector
 ```
 
 Layering is enforced by convention: **routes** validate and serialise,
@@ -85,7 +86,6 @@ See [`docs/architecture.md`](docs/architecture.md) for detail.
 - **PostgreSQL 16+ with the `pgvector` extension** — via Docker (easiest) or Homebrew
   (use `postgresql@17` on Homebrew; see below)
 - **Docker Desktop** — optional, but the simplest way to get PostgreSQL + pgvector
-- **Ollama** — not needed until Phase 7
 
 ---
 
@@ -167,25 +167,17 @@ docker compose --profile full up -d --build
 The backend container runs `alembic upgrade head` before starting uvicorn, so a
 fresh database is migrated automatically.
 
-### Reaching Ollama from the Docker backend
+### Trained model artifacts
 
-Ollama should run **natively on the Mac**, not in a container: local inference on
-Apple Silicon needs the Metal GPU, which Linux containers cannot access. The
-containerised backend reaches it through `host.docker.internal`:
-
-```
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-```
-
-This is already the compose default. Ollama must be listening on all interfaces
-rather than loopback only:
+There is no inference server to run. `docker-compose.yml` mounts
+`./ml/artifacts` read-only into the backend container, so train once on the host
+and the container picks the artifacts up:
 
 ```bash
-OLLAMA_HOST=0.0.0.0 ollama serve
+python -m ml.training.train_condition_model
+docker compose up -d --build
 ```
 
-On Linux hosts the same works via the `host-gateway` entry already declared in
-`docker-compose.yml`.
 
 ---
 
@@ -279,6 +271,43 @@ reach another user's records.
 
 ---
 
+## Machine learning
+
+MedAnalyser's condition prediction is a **random forest trained locally** on a
+public dataset. There is no LLM and no external AI API anywhere in the pipeline.
+
+```bash
+pip install -e "backend[ml]"
+python -m ml.ingest                            # download the dataset (~30 KB)
+python -m ml.eda                               # writes ml/reports/eda.md
+python -m ml.training.train_condition_model    # trains, evaluates, saves artifacts
+```
+
+The API loads the saved artifacts once at startup and never trains. Without them
+everything else still works and `/api/health/ready` reports the model as
+`degraded`.
+
+| | |
+| --- | --- |
+| Dataset | Disease Symptom Description Dataset (CC BY-SA 4.0) |
+| Classes | 41 conditions |
+| Features | 131 binary symptoms |
+| Selected model | Random forest, chosen on cross-validated macro F1 with ties broken on robustness |
+
+**The headline accuracy is not the interesting number.** The dataset is
+synthetic and 93.8% duplicate rows; a naive split leaks and scores 1.000. After
+deduplication the honest measure is how the model behaves on partial input —
+~0.79 with three symptoms, ~0.39 with one.
+
+Full dataset card, leakage analysis, model comparison and limitations:
+[`ml/README.md`](ml/README.md) · [`ml/reports/`](ml/reports/)
+
+> The model outputs **possible conditions requiring professional evaluation**,
+> never a diagnosis. Scores are relative model outputs, not calibrated
+> probabilities.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -299,7 +328,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (128 tests)
+pytest                     # test suite (171 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

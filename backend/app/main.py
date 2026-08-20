@@ -38,11 +38,40 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         "MedAnalyser API starting",
         extra={"environment": settings.environment.value, "version": __version__},
     )
+    _warm_up_models(settings)
     yield
     from app.db.session import dispose_engine
 
     await dispose_engine()
     logger.info("MedAnalyser API stopped")
+
+
+def _warm_up_models(settings: Settings) -> None:
+    """Load ML artifacts once at startup so no request pays for it.
+
+    A missing model is not fatal by default: everything except prediction still
+    works, and a fresh checkout has no artifacts until training has been run.
+    Set `ML_REQUIRE_MODEL=true` in production to refuse to start without one.
+    """
+    from app.services.ml.condition_prediction.model_loader import (
+        ModelUnavailableError,
+        get_condition_model,
+    )
+
+    try:
+        model = get_condition_model()
+    except ModelUnavailableError as exc:
+        if settings.ml_require_model:
+            raise
+        logger.warning(
+            "Starting without a condition model; prediction will be unavailable",
+            extra={"reason": str(exc)},
+        )
+        return
+    logger.info(
+        "Condition model ready",
+        extra={"model_name": model.name, "model_version": model.version},
+    )
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

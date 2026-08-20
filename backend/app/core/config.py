@@ -84,16 +84,15 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
-    # --- LLM ----------------------------------------------------------------
-    llm_provider: str = "ollama"
-    ollama_base_url: str = "http://localhost:11434"
-    model_name: str = "llama3.1:8b-instruct-q4_K_M"
-    llm_timeout_seconds: int = 120
-
-    # --- Embeddings ---------------------------------------------------------
-    embedding_provider: str = "ollama"
-    embedding_model: str = "nomic-embed-text"
-    embedding_dimensions: int = 768
+    # --- Machine learning ---------------------------------------------------
+    # MedAnalyser's core intelligence is a locally trained scikit-learn model,
+    # not an external LLM. Artifacts are produced offline by `ml/training/` and
+    # loaded once at startup.
+    ml_artifacts_path: Path = REPO_ROOT / "ml" / "artifacts"
+    condition_model_name: str = "condition_model"
+    #: Fail startup if the model artifacts are missing or unreadable. Off in
+    #: development so the app still runs before the first training run.
+    ml_require_model: bool = False
 
     # --- Storage ------------------------------------------------------------
     storage_provider: str = "local"

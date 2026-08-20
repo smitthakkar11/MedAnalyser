@@ -80,17 +80,17 @@ and the application depends only on that interface:
 
 | Concern | Interface | First implementation | Later |
 | --- | --- | --- | --- |
-| LLM inference | `LLMService` | `OllamaLLM` | OpenAI, Anthropic, Gemini, vLLM |
-| Embeddings | `EmbeddingService` | local model via Ollama | any embedding API |
 | File storage | `StorageService` | `LocalStorageProvider` | `S3StorageProvider` |
 | Doctor discovery | `DoctorDiscoveryService` | mock provider | a maps/places API |
 
-No module outside an implementation may import a provider SDK or call Ollama
-directly. Provider selection is by environment variable
-(`LLM_PROVIDER`, `EMBEDDING_PROVIDER`, `STORAGE_PROVIDER`, `DOCTOR_PROVIDER`).
+Provider selection is by environment variable (`STORAGE_PROVIDER`,
+`DOCTOR_PROVIDER`). The interfaces land with the phases that need them rather
+than being stubbed now.
 
-These are declared in Phase 1 as the intended shape; the interfaces themselves
-land with the phases that need them (6, 7, 9) rather than being stubbed now.
+**Machine learning is deliberately not behind a provider abstraction.** The
+model is not a swappable vendor: it is trained in this repository from a
+documented dataset and loaded from a local artifact. An abstraction there would
+be indirection with nothing to switch between. See section 12.
 
 ## 5. Health and readiness
 
@@ -134,9 +134,8 @@ in PostgreSQL, everything request-scoped dies with the request. This is what
 allows the production topology (load balancer → N FastAPI instances) without
 sticky sessions.
 
-The one deliberately non-stateless piece is local Ollama inference, which is why
-it sits behind `LLMService` and is expected to become a shared inference server
-in production.
+Model artifacts are read-only and loaded once per process, so ML inference does
+not compromise this: any instance can serve any request.
 
 ## 9. Frontend
 
@@ -324,7 +323,66 @@ them. MedAnalyser records what it is told and never derives, validates or
 suggests a dose. Conditions are likewise the user's own account of their
 history — Phase 8 must keep that separate from anything the model concludes.
 
-## 12. Safety architecture (planned, Phase 8)
+## 12. Machine learning
+
+MedAnalyser's core intelligence is a **locally trained scikit-learn model**. No
+external, hosted or paid AI API is called on any code path.
+
+```
+ml/  (offline)                      backend/app/services/ml/  (online)
+─────────────                       ────────────────────────
+ingest → dataset → train            model_loader → inference
+   │        │        │                    ▲
+   └────────┴────────┴────────────────────┘
+        shared: condition_prediction/features.py
+```
+
+### Training and inference are separate — and share features
+
+Training lives outside the application; the API only ever *loads* artifacts, and
+never trains on any code path. But both import the **same**
+`features.py`. That is the single most important structural decision in this
+package: if vectorisation drifted between fitting and serving, every prediction
+would be silently wrong while every other test still passed. Sharing the module
+makes the drift impossible rather than merely unlikely.
+
+### Why no provider abstraction
+
+Storage and doctor discovery sit behind interfaces because they are vendor
+choices. The model is not: it is trained here, from a documented dataset, and
+loaded from a local file. Wrapping it would be indirection with nothing to swap.
+Model *versioning* — which the metadata file carries and every assessment will
+record — is the substitute that actually matters.
+
+### Loading
+
+Artifacts load once per process, cached with `lru_cache`, warmed during startup.
+A missing model is non-fatal by default (`ML_REQUIRE_MODEL=false`): everything
+except prediction still works, and a fresh checkout has no artifacts until
+training has been run. Readiness reports the model as `degraded` rather than
+failing. Production sets `ML_REQUIRE_MODEL=true` to refuse to start without one.
+
+### Honesty about what the model is
+
+The Phase 4 dataset is synthetic and templated — 93.8% duplicate rows, and every
+symptom set maps to exactly one disease. It is a deterministic lookup table, so
+any capable model scores near-perfectly and that figure means nothing. Three
+things follow, and they are enforced in code rather than merely documented:
+
+* **Deduplication precedes splitting.** Training also reproduces the naive
+  pre-deduplication split to quantify the inflation it prevents.
+* **Scores are not probabilities.** No calibration has been performed, so the
+  schema calls the field `score` and documents it as a relative model output.
+* **Thin input is flagged.** Measured accuracy falls to ~0.79 at three symptoms
+  and ~0.39 at one, so `low_information` is set below three recognised
+  symptoms and the caller is expected to gather more before showing results.
+
+Unrecognised symptoms are returned to the caller rather than dropped, and an
+input with nothing recognisable yields *no* predictions — ranking classes from
+an all-zero vector would return whichever class the model favours by default,
+dressed up as an answer.
+
+## 13. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

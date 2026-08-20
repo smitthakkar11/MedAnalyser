@@ -4,8 +4,8 @@
 #   docker compose up -d --build     # database + backend
 #   docker compose --profile full up -d --build   # + the nginx-served frontend
 #
-# Ollama is expected to run on the HOST (see README): local inference on Apple
-# Silicon needs the Metal GPU, which Linux containers cannot reach.
+# There is no inference server to run: the condition model is a scikit-learn
+# artifact loaded by the backend process itself.
 
 name: medanalyser
 
@@ -41,24 +41,20 @@ services:
     environment:
       # Inside the compose network the database is reachable as `db`.
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medanalyser}:${POSTGRES_PASSWORD:-medanalyser}@db:5432/${POSTGRES_DB:-medanalyser}
-      # `host.docker.internal` reaches Ollama running natively on the Mac.
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-a-long-random-value}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      MODEL_NAME: ${MODEL_NAME:-llama3.1:8b-instruct-q4_K_M}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      ML_ARTIFACTS_PATH: /app/ml_artifacts
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
       FILE_STORAGE_PATH: /app/storage
     ports:
       - "8000:8000"
     volumes:
       - report_storage:/app/storage
-    extra_hosts:
-      # Required on Linux hosts; a no-op on Docker Desktop for Mac.
-      - "host.docker.internal:host-gateway"
+      # Trained artifacts are produced offline and mounted read-only.
+      - ./ml/artifacts:/app/ml_artifacts:ro
     # Migrations run before the API starts, so a fresh volume is usable
     # immediately and the pgvector extension is guaranteed to exist.
     command: >
