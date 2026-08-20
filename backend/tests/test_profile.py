@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -62,7 +62,9 @@ async def test_profile_exposes_age_derived_from_date_of_birth(
     body = (await api_client.get(PROFILE, headers=_auth(token))).json()
 
     assert body["date_of_birth"] == "1990-05-04"
-    expected = date.today().year - 1990 - ((date.today().month, date.today().day) < (5, 4))
+    # Built from UTC, because the service derives age from the server clock.
+    today = datetime.now(UTC).date()
+    expected = today.year - 1990 - ((today.month, today.day) < (5, 4))
     assert body["age"] == expected
 
 
@@ -232,7 +234,7 @@ async def test_invalid_profile_payloads_are_rejected(
 
 async def test_future_dates_are_rejected(api_client: AsyncClient) -> None:
     token = await _onboarded(api_client)
-    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    tomorrow = (datetime.now(UTC).date() + timedelta(days=1)).isoformat()
 
     future_start = await api_client.put(
         PROFILE,
@@ -242,7 +244,7 @@ async def test_future_dates_are_rejected(api_client: AsyncClient) -> None:
     future_year = await api_client.put(
         PROFILE,
         headers=_auth(token),
-        json={"conditions": [{"name": "X", "diagnosed_year": date.today().year + 1}]},
+        json={"conditions": [{"name": "X", "diagnosed_year": datetime.now(UTC).year + 1}]},
     )
 
     assert future_start.status_code == 422

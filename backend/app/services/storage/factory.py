@@ -20,9 +20,7 @@ def build_storage_service(settings: Settings | None = None) -> StorageService:
 
     if provider == "local":
         return LocalStorageProvider(settings.file_storage_path)
-    raise ValueError(
-        f"Unknown STORAGE_PROVIDER {settings.storage_provider!r}. Supported: 'local'."
-    )
+    raise ValueError(f"Unknown STORAGE_PROVIDER {settings.storage_provider!r}. Supported: 'local'.")
 
 
 @lru_cache(maxsize=1)

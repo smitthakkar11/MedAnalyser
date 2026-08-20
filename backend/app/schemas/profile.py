@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -76,7 +76,7 @@ class ConditionInput(_Trimmed):
     @field_validator("diagnosed_year")
     @classmethod
     def _not_in_the_future(cls, value: int | None) -> int | None:
-        if value is not None and value > datetime.now().year:
+        if value is not None and value > datetime.now(UTC).year:
             raise ValueError("Diagnosis year cannot be in the future.")
         return value
 
@@ -109,7 +109,7 @@ class MedicationInput(_Trimmed):
     @field_validator("started_on")
     @classmethod
     def _not_in_the_future(cls, value: date | None) -> date | None:
-        if value is not None and value > datetime.now().date():
+        if value is not None and value > datetime.now(UTC).date():
             raise ValueError("Start date cannot be in the future.")
         return value
 

@@ -7,11 +7,11 @@ plus one environment variable — not a change to the report pipeline.
 
 from app.services.storage.base import (
     StorageError,
-    StoredFile,
     StorageService,
+    StoredFile,
 )
-from app.services.storage.local import LocalStorageProvider
 from app.services.storage.factory import build_storage_service
+from app.services.storage.local import LocalStorageProvider
 
 __all__ = [
     "LocalStorageProvider",

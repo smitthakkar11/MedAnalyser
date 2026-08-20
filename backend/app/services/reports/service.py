@@ -321,7 +321,7 @@ def _read_report_date(text: str) -> date | None:
     timestamps. Future dates are rejected as misreads.
     """
     head = text[:2000]
-    today = date.today()
+    today = datetime.now(UTC).date()
     for pattern, fmt in _DATE_PATTERNS:
         for match in pattern.finditer(head):
             try:

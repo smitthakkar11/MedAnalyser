@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -24,8 +24,20 @@ async def _register(client: AsyncClient) -> str:
     return response.json()["access_token"]
 
 
+def _server_today() -> date:
+    """The date the service will see.
+
+    Age is computed from the server's UTC clock, deliberately: trusting a
+    client-supplied date would defeat the age gate. Tests must therefore build
+    their fixtures from UTC too — using the local date makes every boundary
+    test fail for as long as the local offset (5.5 hours in IST, and a full day
+    either side of the date line).
+    """
+    return datetime.now(UTC).date()
+
+
 def _birthday_years_ago(years: int, *, offset_days: int = 0) -> str:
-    today = date.today()
+    today = _server_today()
     try:
         birthday = today.replace(year=today.year - years)
     except ValueError:  # 29 February in a non-leap target year
@@ -102,7 +114,7 @@ async def test_onboarding_rejects_minors(api_client: AsyncClient, years: int) ->
 
 async def test_onboarding_rejects_a_future_date_of_birth(api_client: AsyncClient) -> None:
     token = await _register(api_client)
-    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    tomorrow = (_server_today() + timedelta(days=1)).isoformat()
 
     response = await api_client.post(
         ONBOARDING,

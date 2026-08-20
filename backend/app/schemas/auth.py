@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -107,7 +107,9 @@ class OnboardingRequest(BaseModel):
     @field_validator("date_of_birth")
     @classmethod
     def _plausible_date(cls, value: date) -> date:
-        today = datetime.now().date()
+        # UTC, matching the clock age verification uses. A naive local clock
+        # here would disagree with it for the length of the server's offset.
+        today = datetime.now(UTC).date()
         if value > today:
             raise ValueError("Date of birth cannot be in the future.")
         if value.year < today.year - MAXIMUM_AGE_YEARS:
