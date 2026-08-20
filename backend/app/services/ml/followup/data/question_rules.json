@@ -1,0 +1,79 @@
+{
+  "_readme": [
+    "Declarative rules for the follow-up question engine.",
+    "",
+    "Each entry is asked at most once, in `order`, and only when its condition",
+    "holds. `asked_when` is a small expression language evaluated by the engine",
+    "against the assessment state — see followup/rules.py for the supported",
+    "predicates. Adding a question is a change to this file, not to code.",
+    "",
+    "`answer_type` drives the UI control: text, choice, boolean, number,",
+    "duration, or symptom_check (a yes/no about a specific symptom)."
+  ],
+  "questions": [
+    {
+      "key": "duration",
+      "order": 10,
+      "text": "How long have you had these symptoms?",
+      "help": "An approximate answer is fine — for example \"3 days\" or \"about two weeks\".",
+      "answer_type": "duration",
+      "asked_when": "duration_days is unknown"
+    },
+    {
+      "key": "severity",
+      "order": 20,
+      "text": "How would you describe the severity?",
+      "answer_type": "choice",
+      "choices": ["mild", "moderate", "severe"],
+      "asked_when": "severity is unknown"
+    },
+    {
+      "key": "additional_symptoms",
+      "order": 30,
+      "text": "Are you experiencing any of these as well?",
+      "help": "Select any that apply. These are chosen because they would help tell the most likely explanations apart.",
+      "answer_type": "symptom_check",
+      "asked_when": "recognised_symptom_count < 6 and candidate_symptoms_available",
+      "repeatable": true,
+      "max_repeats": 2
+    },
+    {
+      "key": "previous_consultation",
+      "order": 40,
+      "text": "Have you seen a doctor about this before?",
+      "answer_type": "boolean",
+      "asked_when": "previous_consultation is unknown"
+    },
+    {
+      "key": "previous_diagnosis",
+      "order": 50,
+      "text": "What did the doctor say it might be?",
+      "help": "Their words, as best you remember. This is recorded as what you were told — it is kept separate from anything MedAnalyser concludes.",
+      "answer_type": "text",
+      "asked_when": "previous_consultation is true and previous_diagnosis is unknown"
+    },
+    {
+      "key": "previous_medication",
+      "order": 60,
+      "text": "Were you prescribed any medication for it?",
+      "help": "The name is enough. MedAnalyser records what you were given and never suggests a dose.",
+      "answer_type": "text",
+      "asked_when": "previous_consultation is true and previous_medication is unknown"
+    },
+    {
+      "key": "treatment_response",
+      "order": 70,
+      "text": "Did that medication help?",
+      "answer_type": "choice",
+      "choices": ["resolved", "improved", "no change", "worse", "not sure"],
+      "asked_when": "previous_medication is present and treatment_response is unknown"
+    },
+    {
+      "key": "still_taking_medication",
+      "order": 80,
+      "text": "Are you still taking it?",
+      "answer_type": "boolean",
+      "asked_when": "previous_medication is present and still_taking_medication is unknown"
+    }
+  ]
+}

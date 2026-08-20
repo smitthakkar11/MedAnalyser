@@ -382,7 +382,77 @@ input with nothing recognisable yields *no* predictions — ranking classes from
 an all-zero vector would return whichever class the model favours by default,
 dressed up as an answer.
 
-## 13. Safety architecture (planned, Phase 8)
+## 13. Symptom assessment
+
+The pipeline from what a user types to a stored, explainable result:
+
+```
+free text → SymptomExtractor → AssessmentState → FollowUpQuestionEngine
+                                      ↓
+                     ConditionPredictionService → PostgreSQL
+```
+
+### Rule-based NLP, on purpose
+
+Symptom extraction is a curated synonym dictionary plus longest-phrase matching
+— no LLM, no statistical NLP model. The target is a **closed vocabulary of 131
+symptoms**; for that, rules are more accurate than a model, run instantly, cost
+nothing, and are inspectable: when an extraction is wrong you can point at the
+line responsible. The dictionary lives in a JSON data file, so extending it is a
+data change, not a code change. A test asserts every key is a real model symptom
+and that no key is duplicated — JSON silently keeps the last of duplicate keys,
+which would discard synonyms without any error.
+
+**Negation is handled explicitly.** "no chest pain" must not become chest pain:
+that is not merely lost signal, it is the opposite of what the user said. A cue
+list scans backwards a bounded window, stopping at contrast words so "no fever
+but a bad cough" negates only the fever. Denied symptoms are *stored* rather
+than discarded — "no chest pain" is clinically meaningful and different from
+"not mentioned".
+
+Duration and severity are parsed from the same text, so the intake never asks
+for something the user already wrote.
+
+### Follow-up questions as a state machine
+
+`question_rules.json` declares each question, its `answer_type`, and an
+`asked_when` expression in a tiny predicate language that is **parsed, not
+`eval`'d**. The engine returns the first applicable unanswered question. Adding
+a question is an edit to that file.
+
+One question is model-informed: `additional_symptoms` offers the symptoms that
+best *discriminate* between the current candidate conditions — those present in
+some candidates but not all — rather than asking in arbitrary order. This is
+where Phase 4's robustness measurement pays off: accuracy climbs from ~0.39 at
+one symptom to ~0.79 at three, so eliciting the right extra symptom is the most
+valuable thing the intake can do.
+
+Symptoms offered but *not* selected are recorded as rejected. Without that the
+engine would offer the same list forever.
+
+### What is stored, and why
+
+Every assessment records the verbatim input, the extracted features, the
+conversation transcript, the predictions, **and the model name and version**.
+Version attribution is what keeps an old result interpretable after the model
+changes; without it a stored prediction is an unattributable number.
+
+### Honest presentation
+
+The UI never shows a raw score as a percentage. The value is an uncalibrated
+relative output, and "72%" reads as a clinical probability to a worried person,
+so results are banded qualitatively. Explanations cite only symptoms the user
+actually reported and are labelled as an explanation of the model, not evidence
+of causation. Thin input carries a visible warning.
+
+### Ownership
+
+`AssessmentRepository` filters on `user_id` inside the query rather than
+checking after the fact, so a missing assessment and someone else's assessment
+are indistinguishable — the endpoint returns 404 either way and never confirms
+that an id exists.
+
+## 14. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

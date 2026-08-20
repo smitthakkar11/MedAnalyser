@@ -342,6 +342,16 @@ def main() -> int:
             "names": vectoriser.vocabulary,
         },
         "labels": list(encoder.classes_),
+        # Which symptoms characterise each condition, derived from the TRAINING
+        # split only. Not used for prediction — the follow-up engine uses it to
+        # pick which unasked symptom would best separate the current
+        # candidates, instead of asking in arbitrary order.
+        "condition_symptoms": {
+            label: sorted(
+                {symptom for case in train_cases if case.label == label for symptom in case.symptoms}
+            )
+            for label in encoder.classes_
+        },
         "selection": {
             "metric": "cross-validated macro F1, ties broken on perturbation robustness",
             "tie_tolerance": CV_TIE_TOLERANCE,

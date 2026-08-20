@@ -22,15 +22,15 @@ medical specialty for further evaluation.
 | **2** | Authentication: email/password (Argon2id), Google OAuth, JWT sessions, account linking, age 18+ verification, onboarding, protected routes | ✅ Complete |
 | **3** | User profile (allergies, conditions, medications, emergency contact) and dashboard | ✅ Complete |
 | **4** | ML foundation: dataset, preprocessing, model comparison, evaluation, inference service | ✅ Complete |
-| 5 | Symptom assessment, NLP symptom extraction & rule-based follow-up engine | Not started |
-| 5 | Medical report upload (PyMuPDF, OCR, structured extraction) | Not started |
-| 6 | Medical knowledge base (treatment & medication information) | Not started |
-| 7 | Specialty prediction model | Not started |
-| 8 | Safety red-flag engine, treatment & medication information, specialty recommendation | Not started |
-| 9 | Doctor discovery | Not started |
-| 10 | Assessment history & medical timeline | Not started |
-| 11 | Testing & security hardening | Not started |
-| 12 | Production readiness | Not started |
+| **5** | Symptom processing & assessment engine: NLP extraction, follow-up state machine, prediction, persistence | ✅ Complete |
+| 6 | Medical report/PDF + OCR processing | Not started |
+| 7 | Combine report/lab features with the ML assessment | Not started |
+| 8 | Safety / red-flag engine | Not started |
+| 9 | Doctor-specialty recommendation | Not started |
+| 10 | Treatment / medication knowledge base | Not started |
+| 11 | Nearby doctor discovery | Not started |
+| 12 | Medical timeline + trends | Not started |
+| 13 | Testing, security, Docker & deployment | Not started |
 
 ---
 
@@ -308,6 +308,37 @@ Full dataset card, leakage analysis, model comparison and limitations:
 
 ---
 
+## Symptom assessment
+
+```
+"stomach ache and been throwing up since yesterday"
+        ↓  rule-based NLP (synonyms, negation, duration, severity)
+   abdominal_pain, vomiting · 1 day
+        ↓  follow-up state machine — asks only what is still missing
+        ↓  trained random forest
+   ranked possible conditions, with the symptoms behind each
+```
+
+| Endpoint | |
+| --- | --- |
+| `POST /api/assessments` | free text in, first question out |
+| `POST /api/assessments/{id}/messages` | answer, get the next question |
+| `POST /api/assessments/{id}/analyze` | run the model, finalise |
+| `GET /api/assessments` · `GET /api/assessments/{id}` · `DELETE` | history |
+
+Symptom synonyms live in
+[`symptom_synonyms.json`](backend/app/services/ml/feature_extraction/data/symptom_synonyms.json)
+and follow-up rules in
+[`question_rules.json`](backend/app/services/ml/followup/data/question_rules.json) —
+both are data files, so extending either is a data change rather than a code
+change. Neither uses an LLM.
+
+Results are presented as **possible conditions to discuss with a clinician**.
+Scores are banded qualitatively rather than shown as percentages, because they
+are uncalibrated relative outputs and a number reads as a clinical probability.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -328,7 +359,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (171 tests)
+pytest                     # test suite (264 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

@@ -14,6 +14,8 @@ from app.db.session import get_db_session
 from app.models.user import User
 from app.services.auth.google import GoogleTokenVerifier, build_google_verifier
 from app.services.auth.service import AuthService, OnboardingRequiredError
+from app.services.ml.condition_prediction.inference import ConditionPredictionService
+from app.services.ml.condition_prediction.model_loader import ModelUnavailableError
 
 
 def get_app_settings(request: Request) -> Settings:
@@ -63,6 +65,27 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 # rather than FastAPI's default shape.
 _bearer_scheme = HTTPBearer(auto_error=False, description="JWT access token")
 BearerCredentials = Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)]
+
+
+def get_condition_predictor(request: Request) -> ConditionPredictionService | None:
+    """Return the condition predictor, or None when no model is available.
+
+    A predictor placed on `app.state` wins, which is how tests inject a small
+    in-fixture model instead of depending on trained artifacts being present.
+    Returning None rather than raising keeps the rest of the API working on a
+    checkout where training has not been run; the assessment service turns it
+    into a 503 only at the point analysis is actually requested.
+    """
+    override = getattr(request.app.state, "condition_predictor", None)
+    if override is not None:
+        return override
+    try:
+        return ConditionPredictionService()
+    except ModelUnavailableError:
+        return None
+
+
+ConditionPredictor = Annotated[ConditionPredictionService | None, Depends(get_condition_predictor)]
 
 
 async def get_current_user(

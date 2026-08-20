@@ -50,11 +50,19 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-12">
-      <header>
-        <h1 className="text-headline">Welcome, {firstName}</h1>
-        <p className="mt-3 max-w-xl text-lg text-ink-600 dark:text-ink-400">
-          Here is what MedAnalyser knows about you so far.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-headline">Welcome, {firstName}</h1>
+          <p className="mt-3 max-w-xl text-lg text-ink-600 dark:text-ink-400">
+            Here is what MedAnalyser knows about you so far.
+          </p>
+        </div>
+        <Link
+          to="/assessment/new"
+          className="whitespace-nowrap rounded-full bg-gradient-to-r from-accent-blue to-accent-violet px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-violet/20 transition hover:shadow-xl"
+        >
+          New assessment
+        </Link>
       </header>
 
       {profileIncomplete && (
@@ -100,10 +108,27 @@ export function DashboardPage() {
           </h2>
           <span className="text-sm text-ink-500">{data.assessment_count} saved</span>
         </div>
-        <EmptyState
-          title="No assessments yet"
-          body="Describing your symptoms and starting an assessment becomes available in the next phase of the build."
-        />
+        {data.assessment_count === 0 ? (
+          <EmptyState
+            title="No assessments yet"
+            body="Describe your symptoms in your own words and MedAnalyser will suggest what may be worth discussing with a doctor."
+            action={
+              <Link
+                to="/assessment/new"
+                className="inline-flex rounded-full bg-gradient-to-r from-accent-blue to-accent-violet px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-violet/20 transition hover:shadow-xl"
+              >
+                Start an assessment
+              </Link>
+            }
+          />
+        ) : (
+          <Link
+            to="/history"
+            className="inline-flex rounded-full border border-ink-300 px-5 py-2.5 text-sm font-semibold transition hover:border-ink-950 dark:border-ink-700 dark:hover:border-ink-0"
+          >
+            View all assessments
+          </Link>
+        )}
       </section>
 
       <section aria-labelledby="reports-heading" className="space-y-5">

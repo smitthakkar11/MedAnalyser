@@ -5,6 +5,12 @@ populated before Alembic autogenerates a migration.
 """
 
 from app.db.base import Base
+from app.models.assessment import (
+    Assessment,
+    AssessmentMessage,
+    AssessmentStatus,
+    MessageRole,
+)
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.profile import (
     Allergy,
@@ -19,11 +25,15 @@ from app.models.user import OAuthAccount, User
 
 __all__ = [
     "Allergy",
+    "Assessment",
+    "AssessmentMessage",
+    "AssessmentStatus",
     "AllergySeverity",
     "Base",
     "Condition",
     "ConditionStatus",
     "Medication",
+    "MessageRole",
     "OAuthAccount",
     "SexAtBirth",
     "TimestampMixin",

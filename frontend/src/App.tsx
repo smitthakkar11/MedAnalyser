@@ -9,7 +9,10 @@ import {
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { PublicLayout } from '@/layouts/PublicLayout';
+import { AssessmentDetailPage } from '@/pages/AssessmentDetailPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { HistoryPage } from '@/pages/HistoryPage';
+import { NewAssessmentPage } from '@/pages/NewAssessmentPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -53,6 +56,9 @@ export default function App() {
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/assessment/new" element={<NewAssessmentPage />} />
+                <Route path="/assessment/:id" element={<AssessmentDetailPage />} />
+                <Route path="/history" element={<HistoryPage />} />
               </Route>
             </Route>
 
