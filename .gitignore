@@ -28,10 +28,11 @@ dist-ssr/
 /storage/
 /backend/storage/
 
-# Editors / OS
+# Editors / OS / local tooling
 .DS_Store
 .idea/
 .vscode/
+.claude/
 *.swp
 
 # ML — raw data and build outputs. Reports and metadata ARE committed so the
