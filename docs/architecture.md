@@ -509,7 +509,53 @@ either would silently attribute a value to the wrong test.
 Values are read line by line, because lab reports are tabular and scanning
 across lines pairs a label with the next row's number.
 
-## 15. Safety architecture (planned, Phase 8)
+## 15. Laboratory results as evidence
+
+Reports attach to an assessment through a join table. What that does — and
+pointedly does not do — is the whole design.
+
+### Why lab values are not model features
+
+The condition model is trained on a symptom-only dataset. It has never seen a
+haemoglobin value, so concatenating one into its feature vector would produce a
+model that *looks* multimodal while having learned nothing from the number. The
+brief for this project rules that out by name, and the code enforces it: a test
+analyses the same symptoms with and without a report attached and asserts the
+predictions are identical, score for score.
+
+### What they do instead
+
+* **They are shown, with provenance.** Every finding carries `source: "report"`,
+  and the UI renders them in a section of their own captioned as read from the
+  document rather than produced by the model. Blending the two lists would imply
+  the model weighed them.
+* **They steer the questions.** An out-of-range value makes certain symptoms
+  worth asking about — low haemoglobin makes fatigue and breathlessness worth a
+  question. That is a *prompt*, never a conclusion, and the mapping lives in a
+  data file that says so.
+
+Only the most recent value per analyte is carried into an assessment: it is
+about the user's current state, and three historical haemoglobins side by side
+would read as three separate results to weigh. Trends belong to the timeline.
+
+### Honesty about the mapping
+
+`lab_symptom_prompts.json` holds 29 well-established associations, restricted to
+symptoms that exist in the model's vocabulary so an answer is actually usable.
+Tests enforce both constraints, plus that every key names a real extractable
+analyte. The file states in its own header that it reflects general clinical
+knowledge, has **not** been reviewed by a clinician, and must be before the
+project is used for anything real.
+
+### What this exposes
+
+Attaching an anaemia panel to symptoms of fatigue and breathlessness produces
+lab findings that clearly indicate iron deficiency, and model predictions that
+do not mention it — because anaemia is not among the 41 conditions in the
+training data. Keeping the two separate is what makes that visible instead of
+hiding it behind a confident-looking single answer.
+
+## 16. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

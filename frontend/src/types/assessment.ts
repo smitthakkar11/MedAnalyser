@@ -39,6 +39,27 @@ export interface AssessmentMessage {
   created_at: string;
 }
 
+export interface LabFinding {
+  analyte: string;
+  display_name: string;
+  value: number;
+  unit: string | null;
+  flag: 'normal' | 'low' | 'high' | 'unknown';
+  reference_text: string | null;
+  report_id: string;
+  report_filename: string;
+  /** Always "report" — distinguishes a measured value from a model output. */
+  source: 'report';
+}
+
+export interface LinkedReport {
+  id: string;
+  original_filename: string;
+  report_date: string | null;
+  value_count: number;
+  abnormal_count: number;
+}
+
 export interface AssessmentDetail {
   id: string;
   status: AssessmentStatus;
@@ -56,6 +77,14 @@ export interface AssessmentDetail {
   predictions: Prediction[];
   model_name: string | null;
   model_version: string | null;
+  linked_reports: LinkedReport[];
+  /**
+   * Laboratory values from attached reports.
+   *
+   * Carried *alongside* predictions, never merged into them: the condition
+   * model is trained on symptoms only and has never seen a lab value.
+   */
+  lab_findings: LabFinding[];
   messages: AssessmentMessage[];
   next_question: FollowUpQuestion | null;
   low_information: boolean;

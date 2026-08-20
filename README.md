@@ -24,7 +24,7 @@ medical specialty for further evaluation.
 | **4** | ML foundation: dataset, preprocessing, model comparison, evaluation, inference service | ✅ Complete |
 | **5** | Symptom processing & assessment engine: NLP extraction, follow-up state machine, prediction, persistence | ✅ Complete |
 | **6** | Medical report upload: PDF text extraction, OCR fallback, lab value extraction | ✅ Complete |
-| 7 | Combine report/lab features with the ML assessment | Not started |
+| **7** | Reports attached to assessments: lab evidence, provenance, lab-driven questions | ✅ Complete |
 | 8 | Safety / red-flag engine | Not started |
 | 9 | Doctor-specialty recommendation | Not started |
 | 10 | Treatment / medication knowledge base | Not started |
@@ -372,6 +372,31 @@ report that no text was found.
 
 ---
 
+## Lab results and the model
+
+A report can be attached to an assessment. Its values are **shown beside** the
+prediction and **steer the follow-up questions** — they are never fed into the
+model.
+
+That is deliberate. The condition model is trained on a symptom-only dataset, so
+putting a haemoglobin value in its feature vector would make it *look*
+multimodal while having learned nothing from the number. A test asserts the
+predictions are identical, score for score, with and without a report attached.
+
+| | |
+| --- | --- |
+| `POST /api/assessments/{id}/reports/{report_id}` | attach |
+| `DELETE /api/assessments/{id}/reports/{report_id}` | detach |
+
+Every finding is returned with `source: "report"` and rendered in its own
+section, captioned as read from the document rather than produced by the model.
+Out-of-range values prompt related symptom questions via
+[`lab_symptom_prompts.json`](backend/app/services/ml/lab_context/data/lab_symptom_prompts.json)
+— a prompt, never a conclusion, and the file records that it has not been
+clinically reviewed.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -392,7 +417,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (354 tests)
+pytest                     # test suite (387 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

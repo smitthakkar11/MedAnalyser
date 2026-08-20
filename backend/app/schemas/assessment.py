@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -92,6 +92,35 @@ class PredictionResponse(BaseModel):
     contributing_symptoms: list[str] = Field(default_factory=list)
 
 
+class LabFindingResponse(BaseModel):
+    """A laboratory value an assessment considered.
+
+    `source` is always `"report"`. It exists so a client can tell, without
+    inferring, that this number was read off a document — as opposed to a
+    prediction, which is produced by the model and labelled as such.
+    """
+
+    analyte: str
+    display_name: str
+    value: float
+    unit: str | None
+    flag: str
+    reference_text: str | None
+    report_id: uuid.UUID
+    report_filename: str
+    source: Literal["report"] = "report"
+
+
+class LinkedReportResponse(BaseModel):
+    """A report attached to an assessment."""
+
+    id: uuid.UUID
+    original_filename: str
+    report_date: date | None
+    value_count: int
+    abnormal_count: int
+
+
 class AssessmentSummary(BaseModel):
     """An assessment as it appears in a list."""
 
@@ -130,6 +159,13 @@ class AssessmentDetail(BaseModel):
     predictions: list[PredictionResponse] = Field(default_factory=list)
     model_name: str | None
     model_version: str | None
+
+    #: Reports attached to this assessment.
+    linked_reports: list[LinkedReportResponse] = Field(default_factory=list)
+    #: Laboratory values from those reports. Carried **alongside** the model's
+    #: predictions, never merged into them: the condition model is trained on
+    #: symptoms only and has never seen a laboratory value.
+    lab_findings: list[LabFindingResponse] = Field(default_factory=list)
 
     messages: list[MessageResponse] = Field(default_factory=list)
     #: The outstanding question, or null when the intake is ready to analyse.

@@ -11,6 +11,7 @@ from app.models.assessment import (
     AssessmentStatus,
     MessageRole,
 )
+from app.models.assessment_report import AssessmentReport
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin
 from app.models.profile import (
     Allergy,
@@ -34,6 +35,7 @@ __all__ = [
     "Allergy",
     "Assessment",
     "AssessmentMessage",
+    "AssessmentReport",
     "AssessmentStatus",
     "AllergySeverity",
     "Base",

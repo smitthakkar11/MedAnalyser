@@ -25,11 +25,15 @@ from app.models.assessment import (
     AssessmentStatus,
     MessageRole,
 )
+from app.models.assessment_report import AssessmentReport
 from app.models.user import User
 from app.repositories.assessment import AssessmentRepository
+from app.repositories.report import ReportRepository
 from app.schemas.assessment import (
     AssessmentDetail,
     AssessmentSummary,
+    LabFindingResponse,
+    LinkedReportResponse,
     MessageResponse,
     PredictionResponse,
     QuestionResponse,
@@ -44,6 +48,11 @@ from app.services.ml.followup import (
     AssessmentState,
     FollowUpQuestionEngine,
     get_question_engine,
+)
+from app.services.ml.lab_context import (
+    LabContext,
+    LabContextService,
+    get_lab_context_service,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,9 +76,12 @@ class AssessmentService:
         extractor: SymptomExtractor | None = None,
         question_engine: FollowUpQuestionEngine | None = None,
         predictor: ConditionPredictionService | None = None,
+        lab_context: LabContextService | None = None,
     ) -> None:
         self._session = session
         self._repository = AssessmentRepository(session)
+        self._reports = ReportRepository(session)
+        self._lab_context_service = lab_context or get_lab_context_service()
         # Injectable for tests; defaults are the process-wide singletons.
         self._extractor = extractor or get_symptom_extractor()
         self._questions = question_engine or get_question_engine()
@@ -137,6 +149,48 @@ class AssessmentService:
             for row in rows
         ]
 
+    async def attach_report(
+        self, user: User, assessment_id: uuid.UUID, report_id: uuid.UUID
+    ) -> AssessmentDetail:
+        """Attach one of the user's reports to one of their assessments.
+
+        Both are re-fetched scoped to the user, so a report belonging to
+        somebody else cannot be attached by supplying its id.
+        """
+        assessment = await self._require(user, assessment_id)
+        if assessment.is_completed:
+            raise ConflictError("This assessment has already been analysed.")
+
+        report = await self._reports.get_for_user(report_id, user.id)
+        if report is None:
+            raise NotFoundError("Report not found.")
+
+        if await self._repository.get_link(assessment.id, report.id) is None:
+            self._repository.add_link(
+                AssessmentReport(assessment_id=assessment.id, report_id=report.id)
+            )
+            await self._session.commit()
+            await self._session.refresh(assessment)
+            logger.info(
+                "Report attached to assessment",
+                extra={"assessment_id": str(assessment.id), "report_id": str(report.id)},
+            )
+        return await self._detail(assessment)
+
+    async def detach_report(
+        self, user: User, assessment_id: uuid.UUID, report_id: uuid.UUID
+    ) -> AssessmentDetail:
+        assessment = await self._require(user, assessment_id)
+        if assessment.is_completed:
+            raise ConflictError("This assessment has already been analysed.")
+
+        link = await self._repository.get_link(assessment.id, report_id)
+        if link is not None:
+            await self._repository.delete_link(link)
+            await self._session.commit()
+            await self._session.refresh(assessment)
+        return await self._detail(assessment)
+
     async def delete(self, user: User, assessment_id: uuid.UUID) -> None:
         assessment = await self._require(user, assessment_id)
         await self._repository.delete(assessment)
@@ -153,7 +207,8 @@ class AssessmentService:
         if assessment.is_completed:
             raise ConflictError("This assessment has already been analysed.")
 
-        expected = self._questions.next_question(self._state(assessment))
+        lab = await self._lab_context(assessment)
+        expected = self._questions.next_question(self._state(assessment, lab))
         if expected is None:
             raise ConflictError("There are no outstanding questions for this assessment.")
         if expected.key != question_key:
@@ -207,7 +262,7 @@ class AssessmentService:
                 assessment.treatment_response = _as_text(value)
             case "still_taking_medication":
                 assessment.still_taking_medication = bool(value)
-            case "additional_symptoms":
+            case "additional_symptoms" | "lab_prompted_symptoms":
                 selected = {str(item) for item in value} if isinstance(value, list) else set()
                 # Symptoms offered but not selected are a real answer — "no, I
                 # don't have those" — so they are recorded as rejected. Without
@@ -266,7 +321,21 @@ class AssessmentService:
             raise NotFoundError("Assessment not found.")
         return assessment
 
-    def _state(self, assessment: Assessment) -> AssessmentState:
+    async def _lab_context(self, assessment: Assessment) -> LabContext:
+        """Lab evidence from the reports attached to this assessment."""
+        values = await self._repository.linked_report_values(assessment.id)
+        if not values:
+            return LabContext()
+        reports = await self._repository.linked_reports(assessment.id)
+        names = {str(report.id): report.original_filename for report in reports}
+        return self._lab_context_service.build(
+            values,
+            names,
+            already_known=set(assessment.recognised_symptoms or [])
+            | set(assessment.rejected_symptoms or []),
+        )
+
+    def _state(self, assessment: Assessment, lab: LabContext | None = None) -> AssessmentState:
         """Project the stored row into the state the rule engine reads."""
         state = AssessmentState(
             recognised_symptoms=list(assessment.recognised_symptoms or []),
@@ -279,6 +348,7 @@ class AssessmentService:
             treatment_response=assessment.treatment_response,
             still_taking_medication=assessment.still_taking_medication,
             candidate_conditions=self._candidate_conditions(assessment),
+            lab_prompted_symptoms=list(lab.prompted_symptoms) if lab else [],
         )
         # A field extracted from the free text counts as answered: asking for it
         # again would be the intake ignoring what the user already wrote.
@@ -317,10 +387,12 @@ class AssessmentService:
         return [prediction.condition for prediction in result.predictions]
 
     async def _detail(self, assessment: Assessment) -> AssessmentDetail:
+        lab = await self._lab_context(assessment)
+        reports = await self._repository.linked_reports(assessment.id)
         question = (
             None
             if assessment.is_completed
-            else self._questions.next_question(self._state(assessment))
+            else self._questions.next_question(self._state(assessment, lab))
         )
         return AssessmentDetail(
             id=assessment.id,
@@ -366,6 +438,30 @@ class AssessmentService:
                 if question
                 else None
             ),
+            linked_reports=[
+                LinkedReportResponse(
+                    id=report.id,
+                    original_filename=report.original_filename,
+                    report_date=report.report_date,
+                    value_count=len(report.values),
+                    abnormal_count=report.abnormal_count,
+                )
+                for report in reports
+            ],
+            # Carried beside the predictions, never merged into them.
+            lab_findings=[
+                LabFindingResponse(
+                    analyte=finding.analyte,
+                    display_name=finding.display_name,
+                    value=finding.value,
+                    unit=finding.unit,
+                    flag=finding.flag.value,
+                    reference_text=finding.reference_text,
+                    report_id=uuid.UUID(finding.report_id),
+                    report_filename=finding.report_filename,
+                )
+                for finding in lab.findings
+            ],
             low_information=len(assessment.recognised_symptoms or []) < MIN_INFORMATIVE_SYMPTOMS,
             created_at=assessment.created_at,
             completed_at=assessment.completed_at,

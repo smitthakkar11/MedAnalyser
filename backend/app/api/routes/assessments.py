@@ -130,6 +130,51 @@ async def list_messages(
 
 
 @router.post(
+    "/{assessment_id}/reports/{report_id}",
+    response_model=AssessmentDetail,
+    summary="Attach one of your reports to this assessment",
+    responses={
+        404: {"description": "No such assessment or report for this user."},
+        409: {"description": "The assessment has already been analysed."},
+    },
+)
+async def attach_report(
+    assessment_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: OnboardedUser,
+    session: DbSession,
+    predictor: ConditionPredictor,
+) -> AssessmentDetail:
+    """Consider a report's laboratory values as part of this assessment.
+
+    The values are carried **alongside** the model's predictions and shown with
+    their source. They are not fed into the condition model, which is trained on
+    symptoms alone; what they do influence is which follow-up questions are
+    worth asking.
+    """
+    return await AssessmentService(session, predictor=predictor).attach_report(
+        current_user, assessment_id, report_id
+    )
+
+
+@router.delete(
+    "/{assessment_id}/reports/{report_id}",
+    response_model=AssessmentDetail,
+    summary="Detach a report from this assessment",
+)
+async def detach_report(
+    assessment_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: OnboardedUser,
+    session: DbSession,
+    predictor: ConditionPredictor,
+) -> AssessmentDetail:
+    return await AssessmentService(session, predictor=predictor).detach_report(
+        current_user, assessment_id, report_id
+    )
+
+
+@router.post(
     "/{assessment_id}/analyze",
     response_model=AssessmentDetail,
     summary="Run the model and finalise the assessment",

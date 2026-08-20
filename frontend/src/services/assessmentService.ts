@@ -44,6 +44,21 @@ export const assessmentService = {
     return data;
   },
 
+  /** Consider a report's values as part of this assessment. */
+  async attachReport(id: string, reportId: string): Promise<AssessmentDetail> {
+    const { data } = await apiClient.post<AssessmentDetail>(
+      `${BASE}/${id}/reports/${reportId}`,
+    );
+    return data;
+  },
+
+  async detachReport(id: string, reportId: string): Promise<AssessmentDetail> {
+    const { data } = await apiClient.delete<AssessmentDetail>(
+      `${BASE}/${id}/reports/${reportId}`,
+    );
+    return data;
+  },
+
   async analyse(id: string): Promise<AssessmentDetail> {
     const { data } = await apiClient.post<AssessmentDetail>(`${BASE}/${id}/analyze`);
     return data;

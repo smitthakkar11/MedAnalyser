@@ -13,6 +13,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.assessment import Assessment, AssessmentMessage
+from app.models.assessment_report import AssessmentReport
+from app.models.report import MedicalReport, ReportValue
 
 
 class AssessmentRepository:
@@ -51,6 +53,44 @@ class AssessmentRepository:
             select(func.count()).select_from(Assessment).where(Assessment.user_id == user_id)
         )
         return int(result.scalar_one())
+
+    async def linked_reports(self, assessment_id: uuid.UUID) -> list[MedicalReport]:
+        """Reports attached to an assessment, oldest first."""
+        result = await self._session.execute(
+            select(MedicalReport)
+            .join(AssessmentReport, AssessmentReport.report_id == MedicalReport.id)
+            .where(AssessmentReport.assessment_id == assessment_id)
+            .order_by(MedicalReport.created_at)
+        )
+        return list(result.scalars().all())
+
+    async def linked_report_values(self, assessment_id: uuid.UUID) -> list[ReportValue]:
+        """Every value from the reports attached to an assessment."""
+        result = await self._session.execute(
+            select(ReportValue)
+            .join(AssessmentReport, AssessmentReport.report_id == ReportValue.report_id)
+            .where(AssessmentReport.assessment_id == assessment_id)
+            .order_by(ReportValue.created_at)
+        )
+        return list(result.scalars().all())
+
+    async def get_link(
+        self, assessment_id: uuid.UUID, report_id: uuid.UUID
+    ) -> AssessmentReport | None:
+        result = await self._session.execute(
+            select(AssessmentReport).where(
+                AssessmentReport.assessment_id == assessment_id,
+                AssessmentReport.report_id == report_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    def add_link(self, link: AssessmentReport) -> AssessmentReport:
+        self._session.add(link)
+        return link
+
+    async def delete_link(self, link: AssessmentReport) -> None:
+        await self._session.delete(link)
 
     def add(self, assessment: Assessment) -> Assessment:
         """Stage a new assessment. The caller commits."""

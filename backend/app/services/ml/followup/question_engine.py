@@ -51,6 +51,9 @@ class AssessmentState:
     still_taking_medication: bool | None = None
     #: Candidate conditions from the latest prediction, best first.
     candidate_conditions: list[str] = field(default_factory=list)
+    #: Symptoms worth asking about because an attached report is out of range.
+    #: Populated from lab evidence, never from the model.
+    lab_prompted_symptoms: list[str] = field(default_factory=list)
     #: Question keys already asked, with how many times.
     asked: Counter[str] = field(default_factory=Counter)
     answered: set[str] = field(default_factory=set)
@@ -60,12 +63,23 @@ class AssessmentState:
             return len(self.recognised_symptoms)
         if name == "candidate_symptoms_available":
             return bool(self.candidate_conditions)
+        if name == "lab_prompts_available":
+            return bool(self._unasked_lab_prompts())
         return getattr(self, name, None)
 
     def is_answered(self, name: str) -> bool:
-        if name in ("recognised_symptom_count", "candidate_symptoms_available"):
+        if name in (
+            "recognised_symptom_count",
+            "candidate_symptoms_available",
+            "lab_prompts_available",
+        ):
             return True
         return name in self.answered
+
+    def _unasked_lab_prompts(self) -> list[str]:
+        """Lab-prompted symptoms the user has not already settled either way."""
+        settled = set(self.recognised_symptoms) | set(self.rejected_symptoms)
+        return [symptom for symptom in self.lab_prompted_symptoms if symptom not in settled]
 
     def record_answer(self, key: str, value: Any) -> None:
         """Mark *key* answered and store the value if it maps to a field."""
@@ -114,7 +128,11 @@ class FollowUpQuestionEngine:
                 continue
 
             if rule.answer_type == "symptom_check":
-                options = self._discriminating_symptoms(state)
+                options = (
+                    state._unasked_lab_prompts()
+                    if rule.key == "lab_prompted_symptoms"
+                    else self._discriminating_symptoms(state)
+                )
                 if not options:
                     # Nothing useful left to offer; do not ask an empty question.
                     continue

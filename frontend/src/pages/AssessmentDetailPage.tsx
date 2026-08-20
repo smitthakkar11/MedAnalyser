@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { FormAlert } from '@/components/FormAlert';
 import { FullPageSpinner } from '@/components/FullPageSpinner';
 import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
+import { LabFindings } from '@/components/assessment/LabFindings';
 import { PredictionCard } from '@/components/assessment/PredictionCard';
 import { SymptomChips } from '@/components/assessment/SymptomChips';
 import { useAsync } from '@/hooks/useAsync';
@@ -118,6 +119,8 @@ export function AssessmentDetailPage() {
           )}
         </section>
       )}
+
+      <LabFindings findings={data.lab_findings} />
 
       <section aria-labelledby="inputs-heading" className="space-y-5">
         <h2 id="inputs-heading" className="text-2xl font-bold tracking-tight">

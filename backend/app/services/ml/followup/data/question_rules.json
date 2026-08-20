@@ -28,6 +28,14 @@
       "asked_when": "severity is unknown"
     },
     {
+      "key": "lab_prompted_symptoms",
+      "order": 25,
+      "text": "Some results on your report are outside its reference range. Have you noticed any of these?",
+      "help": "These are asked because of those results. An out-of-range value together with a symptom is a reason to mention both to a doctor — it is not a diagnosis.",
+      "answer_type": "symptom_check",
+      "asked_when": "lab_prompts_available"
+    },
+    {
       "key": "additional_symptoms",
       "order": 30,
       "text": "Are you experiencing any of these as well?",
