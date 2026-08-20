@@ -257,7 +257,49 @@ server-side on every request; the browser is never trusted to enforce who may
 read what. From Phase 3, repositories filter user-owned rows by `user_id` so the
 ownership check exists in one place rather than in each route.
 
-## 11. Safety architecture (planned, Phase 8)
+## 11. The medical profile
+
+The profile is a user's **standing clinical context** — allergies, existing
+conditions, regular medications — as distinct from an assessment, which is a
+point-in-time episode. Later phases combine both.
+
+### Why relational, not JSONB
+
+Each collection is its own table. These are discrete records that later phases
+filter, compare against retrieved evidence, and cite in an assessment's
+reasoning; a JSONB blob would make all of that awkward and unindexable. JSONB is
+reserved for genuinely open-ended shapes, such as an LLM's extraction output
+whose keys vary by report type.
+
+Date of birth stays on `users` rather than being duplicated here, so age
+verification has exactly one source of truth.
+
+### Replacement semantics
+
+`PUT /api/profile` replaces the whole document, collections included: whatever
+is submitted becomes the profile. That matches how the form behaves — the user
+edits a page and saves it — and avoids a per-item CRUD surface for data that is
+only ever edited as a unit. Scalars and all three collections are written in one
+transaction, so a partially-saved profile is never observable.
+
+### Ownership
+
+`ProfileRepository` takes a `user_id` on every method and filters on it, so
+ownership is enforced by construction — there is no query in the layer capable
+of returning another user's rows. Deletes are scoped the same way, which is what
+stops one user's save from clearing another's records. The identity always comes
+from the verified token, never from a request body or path parameter. Both
+endpoints require `OnboardedUser`, so an account that has not passed the age
+check cannot hold medical data at all.
+
+### Recorded, not interpreted
+
+Medication dose and frequency are free text, stored exactly as the user reports
+them. MedAnalyser records what it is told and never derives, validates or
+suggests a dose. Conditions are likewise the user's own account of their
+history — Phase 8 must keep that separate from anything the model concludes.
+
+## 12. Safety architecture (planned, Phase 8)
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

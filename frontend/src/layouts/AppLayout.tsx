@@ -4,7 +4,10 @@ import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
 
-const NAV_ITEMS = [{ to: '/dashboard', label: 'Dashboard' }] as const;
+const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/profile', label: 'Profile' },
+] as const;
 
 /** Chrome for the signed-in application. */
 export function AppLayout() {

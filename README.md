@@ -20,7 +20,7 @@ medical specialty for further evaluation.
 | --- | --- | --- |
 | **1** | Foundation: repo, FastAPI, PostgreSQL + pgvector, SQLAlchemy, Alembic, React/Vite/Tailwind, Docker, health checks | ✅ Complete |
 | **2** | Authentication: email/password (Argon2id), Google OAuth, JWT sessions, account linking, age 18+ verification, onboarding, protected routes | ✅ Complete |
-| 3 | User profile & dashboard | Not started |
+| **3** | User profile (allergies, conditions, medications, emergency contact) and dashboard | ✅ Complete |
 | 4 | Symptom assessment & conversational AI follow-up | Not started |
 | 5 | Medical report upload (PyMuPDF, OCR, structured extraction) | Not started |
 | 6 | RAG: knowledge ingestion, embeddings, pgvector retrieval | Not started |
@@ -253,6 +253,28 @@ POST /api/auth/logout       POST /api/auth/refresh
 
 ---
 
+## Medical profile
+
+The profile holds a user's standing clinical context, which every future
+assessment reads alongside the symptoms they describe:
+
+- Sex at birth (optional) — it changes laboratory reference ranges — and gender
+  identity, recorded separately and never used for that
+- Allergies, with reaction and severity
+- Existing conditions, with status and year of diagnosis
+- Current and past medications, recorded verbatim
+- Emergency contact and free-text notes
+
+```
+GET /api/profile      PUT /api/profile      GET /api/dashboard
+```
+
+`PUT` replaces the whole document atomically, collections included. Every query
+is scoped to the signed-in user's id in the repository layer, so no request can
+reach another user's records.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -273,7 +295,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (95 tests)
+pytest                     # test suite (126 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 
