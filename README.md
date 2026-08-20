@@ -82,7 +82,8 @@ See [`docs/architecture.md`](docs/architecture.md) for detail.
 
 - **Python 3.11+**
 - **Node.js 20+** (developed on 22)
-- **PostgreSQL 16 with the `pgvector` extension** — via Docker (easiest) or Homebrew
+- **PostgreSQL 16+ with the `pgvector` extension** — via Docker (easiest) or Homebrew
+  (use `postgresql@17` on Homebrew; see below)
 - **Docker Desktop** — optional, but the simplest way to get PostgreSQL + pgvector
 - **Ollama** — not needed until Phase 7
 
@@ -106,10 +107,19 @@ docker compose up -d db
 Or with Homebrew (no Docker):
 
 ```bash
-brew install postgresql@16 pgvector
-brew services start postgresql@16
+brew install postgresql@17 pgvector
+brew services start postgresql@17
 createuser -s medanalyser
 createdb -O medanalyser medanalyser
+psql -d postgres -c "ALTER ROLE medanalyser WITH PASSWORD 'medanalyser';"
+```
+
+Use **postgresql@17**, not 16: Homebrew's `pgvector` bottle only ships extension
+files for Postgres 17 and 18, so `CREATE EXTENSION vector` fails on 16. If
+`psql` is not on your `PATH`, add it:
+
+```bash
+export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
 ```
 
 The `vector` extension itself is created by the first Alembic migration — you do

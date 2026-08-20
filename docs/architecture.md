@@ -65,6 +65,14 @@ The `vector` extension is created by migration `0001_enable_extensions`, before
 any table exists. Readiness checks that it is actually installed and reports
 `degraded` if it is not, which catches "connected to the wrong database" early.
 
+Verified locally against PostgreSQL 17.11 with pgvector 0.8.6: the migration
+applies, downgrades and re-applies cleanly, and readiness returns `ok`,
+`degraded` (extension dropped) and `unavailable` (server down) as expected.
+
+The docker compose stack pins `pgvector/pg16`, which bundles the extension. On
+Homebrew, install `postgresql@17` — the `pgvector` bottle only ships extension
+files for Postgres 17 and 18.
+
 ## 4. Provider abstractions
 
 Four pieces of the system are expected to be swapped, so each gets an interface
