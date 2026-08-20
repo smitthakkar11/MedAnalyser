@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="MedAnalyser — make sense of your symptoms and medical reports, and find the right specialist. AI-assisted information, not a substitute for professional medical advice."
+    />
+    <meta name="theme-color" content="#000000" />
+    <title>MedAnalyser — AI-Assisted Health Assessment</title>
+    <script>
+      // Apply the stored theme before first paint so there is no flash of the
+      // wrong colour scheme. Kept in sync with src/contexts/theme.ts.
+      (function () {
+        try {
+          var stored = localStorage.getItem('medanalyser.theme');
+          var dark =
+            stored === 'dark' ||
+            ((stored === 'system' || stored === null) &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {
+          /* storage unavailable — fall back to the light default */
+        }
+      })();
+    </script>
+  </head>
+  <body class="h-full">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

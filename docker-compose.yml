@@ -1,0 +1,82 @@
+# MedAnalyser — development stack.
+#
+#   docker compose up -d db          # just PostgreSQL + pgvector
+#   docker compose up -d --build     # database + backend
+#   docker compose --profile full up -d --build   # + the nginx-served frontend
+#
+# Ollama is expected to run on the HOST (see README): local inference on Apple
+# Silicon needs the Metal GPU, which Linux containers cannot reach.
+
+name: medanalyser
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: medanalyser-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medanalyser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medanalyser}
+      POSTGRES_DB: ${POSTGRES_DB:-medanalyser}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medanalyser} -d ${POSTGRES_DB:-medanalyser}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: infra/docker/backend.Dockerfile
+    container_name: medanalyser-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Inside the compose network the database is reachable as `db`.
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medanalyser}:${POSTGRES_PASSWORD:-medanalyser}@db:5432/${POSTGRES_DB:-medanalyser}
+      # `host.docker.internal` reaches Ollama running natively on the Mac.
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-a-long-random-value}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MODEL_NAME: ${MODEL_NAME:-llama3.1:8b-instruct-q4_K_M}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      FILE_STORAGE_PATH: /app/storage
+    ports:
+      - "8000:8000"
+    volumes:
+      - report_storage:/app/storage
+    extra_hosts:
+      # Required on Linux hosts; a no-op on Docker Desktop for Mac.
+      - "host.docker.internal:host-gateway"
+    # Migrations run before the API starts, so a fresh volume is usable
+    # immediately and the pgvector extension is guaranteed to exist.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: infra/docker/frontend.Dockerfile
+    container_name: medanalyser-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  postgres_data:
+  report_storage:
