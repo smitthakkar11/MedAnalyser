@@ -70,6 +70,17 @@ export function HistoryPage() {
                   <span className="font-mono text-xs text-ink-500">
                     {formatDate(assessment.created_at)}
                   </span>
+                  {assessment.safety_level !== 'none' && (
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                        assessment.safety_level === 'emergency'
+                          ? 'bg-danger-500 text-white'
+                          : 'bg-amber-400 text-amber-950'
+                      }`}
+                    >
+                      {assessment.safety_level === 'emergency' ? 'Urgent' : 'See a doctor'}
+                    </span>
+                  )}
                   {assessment.status === 'completed' ? (
                     <span className="text-xs font-semibold text-ink-600 dark:text-ink-400">
                       {assessment.symptom_count} symptom

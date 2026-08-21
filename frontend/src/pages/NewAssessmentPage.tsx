@@ -5,6 +5,7 @@ import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
 import { SubmitButton } from '@/components/SubmitButton';
 import { AnswerControl } from '@/components/assessment/AnswerControl';
 import { ReportPicker } from '@/components/assessment/ReportPicker';
+import { SafetyBanner } from '@/components/assessment/SafetyBanner';
 import { SymptomChips } from '@/components/assessment/SymptomChips';
 import { ApiError } from '@/services/apiClient';
 import { assessmentService } from '@/services/assessmentService';
@@ -167,6 +168,8 @@ export function NewAssessmentPage() {
             : 'MedAnalyser has what it needs.'}
         </p>
       </header>
+
+      <SafetyBanner safety={assessment.safety} />
 
       <section
         aria-label="What was understood"

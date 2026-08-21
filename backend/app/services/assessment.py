@@ -37,6 +37,8 @@ from app.schemas.assessment import (
     MessageResponse,
     PredictionResponse,
     QuestionResponse,
+    SafetyFlagResponse,
+    SafetyResponse,
     SymptomOption,
 )
 from app.services.ml.condition_prediction.inference import (
@@ -54,6 +56,7 @@ from app.services.ml.lab_context import (
     LabContextService,
     get_lab_context_service,
 )
+from app.services.safety import SafetyRuleEngine, get_safety_engine, headline_for
 
 logger = logging.getLogger(__name__)
 
@@ -77,11 +80,13 @@ class AssessmentService:
         question_engine: FollowUpQuestionEngine | None = None,
         predictor: ConditionPredictionService | None = None,
         lab_context: LabContextService | None = None,
+        safety: SafetyRuleEngine | None = None,
     ) -> None:
         self._session = session
         self._repository = AssessmentRepository(session)
         self._reports = ReportRepository(session)
         self._lab_context_service = lab_context or get_lab_context_service()
+        self._safety = safety or get_safety_engine()
         # Injectable for tests; defaults are the process-wide singletons.
         self._extractor = extractor or get_symptom_extractor()
         self._questions = question_engine or get_question_engine()
@@ -108,6 +113,7 @@ class AssessmentService:
             duration_days=extraction.duration_days,
             severity=extraction.severity,
         )
+        self._evaluate_safety(assessment)
         self._repository.add(assessment)
         self._repository.add_message(
             AssessmentMessage(
@@ -143,6 +149,7 @@ class AssessmentService:
                 input_text=row.input_text,
                 top_condition=row.top_condition,
                 symptom_count=len(row.recognised_symptoms or []),
+                safety_level=row.safety_level or "none",
                 created_at=row.created_at,
                 completed_at=row.completed_at,
             )
@@ -235,6 +242,8 @@ class AssessmentService:
                 content=_render_answer(value),
             )
         )
+        # An answer can introduce a symptom that trips a red flag.
+        self._evaluate_safety(assessment)
         await self._session.commit()
         await self._session.refresh(assessment)
         return await self._detail(assessment)
@@ -290,6 +299,8 @@ class AssessmentService:
         assessment.model_version = result.model_version
         assessment.status = AssessmentStatus.COMPLETED
         assessment.completed_at = datetime.now(UTC)
+        # Final evaluation, so the completed record states what was shown.
+        self._evaluate_safety(assessment)
 
         await self._session.commit()
         await self._session.refresh(assessment)
@@ -386,6 +397,32 @@ class AssessmentService:
             return []
         return [prediction.condition for prediction in result.predictions]
 
+    def _evaluate_safety(self, assessment: Assessment) -> None:
+        """Re-run the red-flag rules and record the outcome on the assessment.
+
+        Called before every commit that changes the inputs, so a flag that only
+        becomes apparent from a later answer is still caught. Independent of the
+        model: nothing here consults a prediction.
+        """
+        outcome = self._safety.evaluate(
+            symptoms=list(assessment.recognised_symptoms or []),
+            text=assessment.input_text,
+            severity=assessment.severity,
+            duration_days=assessment.duration_days,
+        )
+        assessment.safety_level = outcome.level.value
+        assessment.safety_flags = [
+            {
+                "id": flag.id,
+                "level": flag.level.value,
+                "title": flag.title,
+                "advice": flag.advice,
+                "source": flag.source,
+                "source_url": flag.source_url,
+            }
+            for flag in outcome.triggered
+        ]
+
     async def _detail(self, assessment: Assessment) -> AssessmentDetail:
         lab = await self._lab_context(assessment)
         reports = await self._repository.linked_reports(assessment.id)
@@ -396,6 +433,7 @@ class AssessmentService:
         )
         return AssessmentDetail(
             id=assessment.id,
+            safety=_stored_safety(assessment),
             status=assessment.status,
             input_text=assessment.input_text,
             recognised_symptoms=list(assessment.recognised_symptoms or []),
@@ -466,6 +504,17 @@ class AssessmentService:
             created_at=assessment.created_at,
             completed_at=assessment.completed_at,
         )
+
+
+def _stored_safety(assessment: Assessment) -> SafetyResponse:
+    """Render the safety outcome recorded on the assessment.
+
+    Read from storage rather than recomputed, so a completed assessment keeps
+    showing what the user was actually warned about even if the rules change.
+    """
+    flags = [SafetyFlagResponse(**flag) for flag in (assessment.safety_flags or [])]
+    level = assessment.safety_level or "none"
+    return SafetyResponse(level=level, headline=headline_for(level), flags=flags)
 
 
 def _unrecognised_terms(unmatched: str, *, limit: int = 12) -> list[str]:

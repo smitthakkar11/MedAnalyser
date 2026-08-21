@@ -25,7 +25,7 @@ medical specialty for further evaluation.
 | **5** | Symptom processing & assessment engine: NLP extraction, follow-up state machine, prediction, persistence | ✅ Complete |
 | **6** | Medical report upload: PDF text extraction, OCR fallback, lab value extraction | ✅ Complete |
 | **7** | Reports attached to assessments: lab evidence, provenance, lab-driven questions | ✅ Complete |
-| 8 | Safety / red-flag engine | Not started |
+| **8** | Safety / red-flag engine: deterministic rules, sourced, taking priority over the model | ✅ Complete |
 | 9 | Doctor-specialty recommendation | Not started |
 | 10 | Treatment / medication knowledge base | Not started |
 | 11 | Nearby doctor discovery | Not started |
@@ -397,6 +397,39 @@ clinically reviewed.
 
 ---
 
+## Safety
+
+A deterministic red-flag engine runs on every assessment, **independently of the
+model**, and takes priority over anything it predicts.
+
+Twenty rules — sixteen emergency, four urgent — each citing the public NHS
+guidance it came from, in
+[`red_flags.json`](backend/app/services/safety/data/red_flags.json). They match
+on extracted symptoms, severity, duration **and the user's own words**, because
+the symptom vocabulary cannot express "crushing", "worst headache of my life" or
+"passed out".
+
+```
+"crushing chest pain spreading to my arm"
+        ↓  rules, not the model
+   EMERGENCY · Chest pain with cardiac warning signs · NHS — Heart attack
+```
+
+Why rules rather than the model: a model can be argued out of an emergency
+finding by unusual phrasing, and this one was trained on synthetic data with no
+notion of severity. A rule table cannot be talked round and can be read by a
+clinician. A test asserts the safety package imports no predictor.
+
+The warning renders above everything else with `role="alert"`, is re-evaluated
+whenever the inputs change, and never hedges — a test checks the wording for
+reassurance words.
+
+> The rules are assembled from public patient-facing guidance for an educational
+> project and have **not** been reviewed by a clinician. They must be before any
+> real-world use.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -417,7 +450,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (387 tests)
+pytest                     # test suite (437 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

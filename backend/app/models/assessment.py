@@ -92,6 +92,14 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     treatment_response: Mapped[str | None] = mapped_column(String(40), nullable=True)
     still_taking_medication: Mapped[bool | None] = mapped_column(nullable=True)
 
+    # --- safety ---------------------------------------------------------
+    # Produced by the deterministic red-flag engine, never by the model, and
+    # stored so a completed assessment records what the user was warned about.
+    safety_level: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="none", server_default="none"
+    )
+    safety_flags: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
+
     # --- model output -------------------------------------------------------
     #: Ranked candidates as returned by the inference service. JSONB genuinely
     #: fits: the shape depends on the model version that produced it.

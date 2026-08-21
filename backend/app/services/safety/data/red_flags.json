@@ -1,0 +1,284 @@
+{
+  "_readme": [
+    "Deterministic red-flag rules. These run INDEPENDENTLY of the machine",
+    "learning model and take priority over anything it predicts.",
+    "",
+    "Why not let the model do this: a model can be argued out of an emergency",
+    "finding by an unusual phrasing or a thin symptom set, and this one was",
+    "trained on synthetic data with no notion of severity at all. A rule table",
+    "cannot be talked round, can be read by a clinician, and fails loudly.",
+    "",
+    "Every rule cites the public guidance it comes from. Rules are deliberately",
+    "conservative: a false alarm costs a wasted trip, a miss can cost far more.",
+    "",
+    "IMPORTANT: this mapping has NOT been reviewed by a clinician. It is",
+    "assembled from public patient-facing guidance for an educational project",
+    "and must be reviewed before any real-world use.",
+    "",
+    "levels:",
+    "  emergency — advise contacting emergency services immediately",
+    "  urgent    — advise same-day medical assessment",
+    "",
+    "triggers (a rule fires when ALL present trigger types match):",
+    "  any_symptoms  — at least one of these canonical symptoms is reported",
+    "  all_symptoms  — every one of these is reported",
+    "  text_patterns — a regex matched against the user's own words, for things",
+    "                  the fixed symptom vocabulary cannot express",
+    "  min_severity  — the reported episode severity is at least this"
+  ],
+  "rules": [
+    {
+      "id": "cardiac_chest_pain",
+      "level": "emergency",
+      "title": "Chest pain with other cardiac warning signs",
+      "all_symptoms": ["chest_pain"],
+      "any_symptoms": ["breathlessness", "sweating", "vomiting", "fast_heart_rate", "palpitations"],
+      "advice": "Chest pain together with breathlessness, sweating or a racing heart can indicate a heart attack. Contact emergency services now — do not drive yourself.",
+      "source": "NHS — Heart attack",
+      "source_url": "https://www.nhs.uk/conditions/heart-attack/"
+    },
+    {
+      "id": "severe_chest_pain",
+      "level": "emergency",
+      "title": "Severe chest pain",
+      "all_symptoms": ["chest_pain"],
+      "min_severity": "severe",
+      "advice": "Severe chest pain needs immediate assessment. Contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "crushing_chest_pain_text",
+      "level": "emergency",
+      "title": "Chest pain described as crushing or radiating",
+      "text_patterns": [
+        "crushing (chest )?pain",
+        "chest feels (tight|crushed|heavy)",
+        "pain (spreading|radiating|going) (to|down|into) my (arm|jaw|neck|back)",
+        "elephant (sitting|standing) on my chest"
+      ],
+      "advice": "Chest pain described this way can indicate a heart attack. Contact emergency services now.",
+      "source": "NHS — Heart attack",
+      "source_url": "https://www.nhs.uk/conditions/heart-attack/"
+    },
+    {
+      "id": "stroke_signs",
+      "level": "emergency",
+      "title": "Possible signs of a stroke",
+      "any_symptoms": ["slurred_speech", "weakness_of_one_body_side", "altered_sensorium"],
+      "advice": "Sudden weakness on one side, drooping of the face, slurred speech or confusion can indicate a stroke. Contact emergency services immediately — treatment is time critical.",
+      "source": "NHS — Stroke (FAST)",
+      "source_url": "https://www.nhs.uk/conditions/stroke/"
+    },
+    {
+      "id": "stroke_text",
+      "level": "emergency",
+      "title": "Stroke described in your own words",
+      "text_patterns": [
+        "face (is )?(drooping|droopy|dropped)",
+        "cannot (lift|raise) my arm",
+        "cant (lift|raise) my arm",
+        "cannot (speak|talk) properly",
+        "words (are )?(coming out wrong|jumbled)",
+        "sudden(ly)? (numb|numbness) (on|down) one side"
+      ],
+      "advice": "These can be signs of a stroke. Contact emergency services immediately — treatment is time critical.",
+      "source": "NHS — Stroke (FAST)",
+      "source_url": "https://www.nhs.uk/conditions/stroke/"
+    },
+    {
+      "id": "severe_breathing_difficulty",
+      "level": "emergency",
+      "title": "Severe difficulty breathing",
+      "all_symptoms": ["breathlessness"],
+      "min_severity": "severe",
+      "advice": "Severe difficulty breathing needs immediate assessment. Contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "cannot_breathe_text",
+      "level": "emergency",
+      "title": "Unable to breathe or speak in full sentences",
+      "text_patterns": [
+        "cannot breathe",
+        "cant breathe",
+        "struggling to breathe",
+        "fighting for (breath|air)",
+        "gasping for (breath|air)",
+        "cannot (finish|complete) a sentence",
+        "choking"
+      ],
+      "advice": "Being unable to breathe properly is a medical emergency. Contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "loss_of_consciousness",
+      "level": "emergency",
+      "title": "Loss of consciousness",
+      "any_symptoms": ["coma"],
+      "text_patterns": [
+        "passed out",
+        "blacked out",
+        "lost consciousness",
+        "fainted",
+        "unresponsive",
+        "cannot (wake|rouse)",
+        "collapsed"
+      ],
+      "advice": "Loss of consciousness needs urgent assessment. Contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "anaphylaxis",
+      "level": "emergency",
+      "title": "Possible severe allergic reaction",
+      "text_patterns": [
+        "(throat|tongue|lips?|face) (is |are )?(swelling|swollen)",
+        "cannot swallow",
+        "allergic reaction",
+        "anaphylaxis",
+        "used my epipen",
+        "wheezing after (eating|a sting|an injection|medication)"
+      ],
+      "advice": "Swelling of the face, lips, tongue or throat with difficulty breathing can be anaphylaxis. Use an adrenaline auto-injector if you have one and contact emergency services immediately.",
+      "source": "NHS — Anaphylaxis",
+      "source_url": "https://www.nhs.uk/conditions/anaphylaxis/"
+    },
+    {
+      "id": "severe_bleeding",
+      "level": "emergency",
+      "title": "Severe or uncontrolled bleeding",
+      "text_patterns": [
+        "bleeding (heavily|badly|a lot)",
+        "cannot stop the bleeding",
+        "blood (is )?(pouring|gushing)",
+        "vomiting blood",
+        "coughing up (a lot of )?blood",
+        "bleeding that (will not|wont) stop"
+      ],
+      "advice": "Heavy bleeding that will not stop is a medical emergency. Apply firm pressure and contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "meningitis_signs",
+      "level": "emergency",
+      "title": "Possible meningitis",
+      "all_symptoms": ["high_fever", "stiff_neck"],
+      "advice": "Fever with a stiff neck can indicate meningitis, especially alongside a rash, severe headache or dislike of bright light. Seek emergency care immediately.",
+      "source": "NHS — Meningitis",
+      "source_url": "https://www.nhs.uk/conditions/meningitis/"
+    },
+    {
+      "id": "meningitis_rash_text",
+      "level": "emergency",
+      "title": "Rash that does not fade under pressure",
+      "text_patterns": [
+        "rash (that )?(does not|doesnt|will not|wont) fade",
+        "glass test",
+        "rash (does not|doesnt) disappear when pressed"
+      ],
+      "advice": "A rash that does not fade when pressed with a glass can indicate meningococcal infection. Seek emergency care immediately.",
+      "source": "NHS — Meningitis",
+      "source_url": "https://www.nhs.uk/conditions/meningitis/"
+    },
+    {
+      "id": "sepsis_signs",
+      "level": "emergency",
+      "title": "Possible sepsis",
+      "any_symptoms": ["altered_sensorium"],
+      "all_symptoms": ["high_fever"],
+      "advice": "A high temperature with confusion, slurred speech or severe breathlessness can indicate sepsis, which needs immediate treatment. Seek emergency care now.",
+      "source": "NHS — Sepsis",
+      "source_url": "https://www.nhs.uk/conditions/sepsis/"
+    },
+    {
+      "id": "sepsis_text",
+      "level": "emergency",
+      "title": "Sepsis warning signs described",
+      "text_patterns": [
+        "skin (is )?(mottled|blue|grey|ashen)",
+        "(lips|tongue) (are |is )?(blue|grey)",
+        "not (passed |produced )?urine (all day|for a day|in a day)",
+        "shivering (uncontrollably|violently)"
+      ],
+      "advice": "These can be signs of sepsis, which needs immediate treatment. Seek emergency care now.",
+      "source": "NHS — Sepsis",
+      "source_url": "https://www.nhs.uk/conditions/sepsis/"
+    },
+    {
+      "id": "severe_neurological",
+      "level": "emergency",
+      "title": "Sudden severe neurological symptoms",
+      "text_patterns": [
+        "worst headache of my life",
+        "thunderclap headache",
+        "sudden(ly)? (severe|blinding) headache",
+        "(having|had) a (seizure|fit|convulsion)",
+        "sudden(ly)? (lost|losing) (my )?(vision|sight)"
+      ],
+      "advice": "A sudden severe headache, seizure or sudden loss of vision needs emergency assessment. Contact emergency services now.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "self_harm",
+      "level": "emergency",
+      "title": "Thoughts of self-harm or suicide",
+      "text_patterns": [
+        "kill myself",
+        "end my life",
+        "suicidal",
+        "want to die",
+        "harm myself",
+        "hurt myself on purpose",
+        "no reason to (live|go on)"
+      ],
+      "advice": "You deserve support right now. Contact your local emergency services or a suicide prevention helpline immediately — in the UK, call 999 or Samaritans on 116 123. You do not have to face this alone.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "severe_abdominal_pain",
+      "level": "urgent",
+      "title": "Severe abdominal pain",
+      "any_symptoms": ["abdominal_pain", "belly_pain", "stomach_pain"],
+      "min_severity": "severe",
+      "advice": "Severe abdominal pain should be assessed today. Contact your doctor or an urgent care service — go to an emergency department if it worsens, or if you also have a fever, vomiting or blood in your stool.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "blood_in_stool_or_urine",
+      "level": "urgent",
+      "title": "Blood in stool or urine",
+      "any_symptoms": ["bloody_stool", "stomach_bleeding"],
+      "advice": "Blood in your stool should be assessed promptly. Arrange to see a doctor today.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "persistent_high_fever",
+      "level": "urgent",
+      "title": "High fever that is not settling",
+      "all_symptoms": ["high_fever"],
+      "min_duration_days": 5,
+      "advice": "A high temperature lasting five days or more should be assessed by a doctor.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    },
+    {
+      "id": "dehydration_signs",
+      "level": "urgent",
+      "title": "Signs of significant dehydration",
+      "all_symptoms": ["dehydration"],
+      "any_symptoms": ["dizziness", "altered_sensorium", "sunken_eyes"],
+      "advice": "Dehydration with dizziness or confusion should be assessed today, especially if you cannot keep fluids down.",
+      "source": "NHS — When to call 999",
+      "source_url": "https://www.nhs.uk/nhs-services/urgent-and-emergency-care-services/when-to-call-999/"
+    }
+  ]
+}

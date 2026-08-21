@@ -555,7 +555,61 @@ do not mention it — because anaemia is not among the 41 conditions in the
 training data. Keeping the two separate is what makes that visible instead of
 hiding it behind a confident-looking single answer.
 
-## 16. Safety architecture (planned, Phase 8)
+## 16. Safety architecture
+
+The red-flag engine is **deliberately outside `services/ml/`**. That is not
+filing preference: the whole point is independence from the model.
+
+### Why not let the model do it
+
+A classification model can be argued out of an emergency finding by unusual
+phrasing or a thin symptom set, and this one was trained on synthetic data with
+no notion of severity at all. A rule table cannot be talked round, can be read
+by a clinician, and fails loudly rather than quietly. Nothing in the safety
+package imports a predictor — a test asserts that by reading the source.
+
+### How rules fire
+
+Twenty rules, sixteen emergency and four urgent, each citing the public NHS
+guidance it came from. Triggers fall into two kinds, and conflating them loses
+emergencies:
+
+* **Evidence** — `any_symptoms` and `text_patterns` are alternative routes to
+  the same finding, so *either* suffices.
+* **Constraints** — `all_symptoms`, `min_severity`, `min_duration_days`. Every
+  one declared must hold.
+
+That distinction was learned the hard way. The loss-of-consciousness rule
+declares both a symptom and text patterns; requiring both meant "I passed out",
+with no symptom ticked, returned **no red flag at all**.
+
+The user's raw text is checked as well as the extracted symptoms, because the
+131-symptom vocabulary cannot express "crushing", "worst headache of my life" or
+"passed out" — the phrases that matter most.
+
+### Priority, and no false reassurance
+
+The engine reports the highest level any rule reached; an emergency alongside
+five urgent findings is still an emergency. The result is stored on the
+assessment, re-evaluated whenever the inputs change (a later answer of "severe"
+can turn an unremarkable chest pain into an emergency), and rendered above
+everything else with `role="alert"`.
+
+The wording deliberately does not hedge, and a test asserts it: telling someone
+with crushing chest pain that this is "possibly something to look into" would be
+the worst thing this product could do. Proportionality matters in the other
+direction too — severe abdominal pain is *urgent*, not an emergency, because
+escalating everything trains people to ignore the warnings that count.
+
+### Honesty about the rules
+
+`red_flags.json` states in its own header that it is assembled from public
+patient-facing guidance for an educational project, has **not** been reviewed by
+a clinician, and must be before any real use. Loading is strict: a rule with no
+triggers, no source, or a duplicate id raises rather than being skipped — a rule
+that silently never fires is worse than no rule, because it looks like cover.
+
+
 
 The red-flag engine is **deliberately not an LLM prompt**. It is a deterministic
 rule layer that runs independently, after assessment generation, and can

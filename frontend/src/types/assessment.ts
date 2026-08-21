@@ -60,6 +60,30 @@ export interface LinkedReport {
   abnormal_count: number;
 }
 
+export type SafetyLevel = 'none' | 'urgent' | 'emergency';
+
+export interface SafetyFlag {
+  id: string;
+  level: 'urgent' | 'emergency';
+  title: string;
+  advice: string;
+  source: string;
+  source_url: string;
+}
+
+/**
+ * The red-flag outcome.
+ *
+ * Produced by a deterministic rule engine that never consults the model, and
+ * it takes priority: it must be rendered above and more prominently than any
+ * prediction, and no model output may soften it.
+ */
+export interface Safety {
+  level: SafetyLevel;
+  headline: string;
+  flags: SafetyFlag[];
+}
+
 export interface AssessmentDetail {
   id: string;
   status: AssessmentStatus;
@@ -77,6 +101,7 @@ export interface AssessmentDetail {
   predictions: Prediction[];
   model_name: string | null;
   model_version: string | null;
+  safety: Safety;
   linked_reports: LinkedReport[];
   /**
    * Laboratory values from attached reports.
@@ -95,6 +120,7 @@ export interface AssessmentDetail {
 export interface AssessmentSummary {
   id: string;
   status: AssessmentStatus;
+  safety_level: SafetyLevel;
   input_text: string;
   top_condition: string | null;
   symptom_count: number;

@@ -121,6 +121,34 @@ class LinkedReportResponse(BaseModel):
     abnormal_count: int
 
 
+class SafetyFlagResponse(BaseModel):
+    """One red-flag rule that fired.
+
+    Produced by the deterministic rule engine, never by the model, and always
+    citing the public guidance the rule came from.
+    """
+
+    id: str
+    level: Literal["urgent", "emergency"]
+    title: str
+    advice: str
+    source: str
+    source_url: str
+
+
+class SafetyResponse(BaseModel):
+    """The red-flag outcome for an assessment.
+
+    This takes priority over `predictions`. A client must render it above and
+    more prominently than any model output, and must never let a prediction
+    soften it.
+    """
+
+    level: Literal["none", "urgent", "emergency"]
+    headline: str
+    flags: list[SafetyFlagResponse] = Field(default_factory=list)
+
+
 class AssessmentSummary(BaseModel):
     """An assessment as it appears in a list."""
 
@@ -131,6 +159,7 @@ class AssessmentSummary(BaseModel):
     input_text: str
     top_condition: str | None
     symptom_count: int
+    safety_level: Literal["none", "urgent", "emergency"] = "none"
     created_at: datetime
     completed_at: datetime | None
 
@@ -155,6 +184,9 @@ class AssessmentDetail(BaseModel):
     previous_medication: str | None
     treatment_response: str | None
     still_taking_medication: bool | None
+
+    #: Red-flag outcome. Takes priority over everything below it.
+    safety: SafetyResponse
 
     predictions: list[PredictionResponse] = Field(default_factory=list)
     model_name: str | None

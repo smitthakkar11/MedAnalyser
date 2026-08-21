@@ -4,6 +4,7 @@ import { FullPageSpinner } from '@/components/FullPageSpinner';
 import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
 import { LabFindings } from '@/components/assessment/LabFindings';
 import { PredictionCard } from '@/components/assessment/PredictionCard';
+import { SafetyBanner } from '@/components/assessment/SafetyBanner';
 import { SymptomChips } from '@/components/assessment/SymptomChips';
 import { useAsync } from '@/hooks/useAsync';
 import { assessmentService } from '@/services/assessmentService';
@@ -68,6 +69,8 @@ export function AssessmentDetailPage() {
           “{data.input_text}”
         </p>
       </header>
+
+      <SafetyBanner safety={data.safety} />
 
       {data.status !== 'completed' && (
         <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-6 dark:border-ink-800 dark:bg-ink-900/60">
