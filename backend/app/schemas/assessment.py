@@ -149,6 +149,22 @@ class SafetyResponse(BaseModel):
     flags: list[SafetyFlagResponse] = Field(default_factory=list)
 
 
+class SpecialtyResponse(BaseModel):
+    """The kind of doctor suggested for further evaluation.
+
+    A transparent lookup from the predicted condition, not a model output.
+    `basis` says what it was derived from, and `overridden_by_safety` is set
+    when a red flag replaced a referral with a direction to emergency care.
+    """
+
+    specialty: str
+    display_name: str
+    description: str
+    basis: Literal["condition", "symptom", "default", "emergency"]
+    reason: str
+    overridden_by_safety: bool = False
+
+
 class AssessmentSummary(BaseModel):
     """An assessment as it appears in a list."""
 
@@ -187,6 +203,8 @@ class AssessmentDetail(BaseModel):
 
     #: Red-flag outcome. Takes priority over everything below it.
     safety: SafetyResponse
+    #: Suggested specialty, present once the assessment has been analysed.
+    specialty: SpecialtyResponse | None = None
 
     predictions: list[PredictionResponse] = Field(default_factory=list)
     model_name: str | None

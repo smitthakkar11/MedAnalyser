@@ -239,3 +239,82 @@ async def test_a_denied_symptom_does_not_raise_a_flag(client: AsyncClient) -> No
     body = await _start(client, headers, "I have a headache but no chest pain")
 
     assert body["safety"]["level"] == "none"
+
+
+# ------------------------------------------ specialty interaction with safety
+
+
+async def test_an_analysed_assessment_recommends_a_specialty(
+    client: AsyncClient,
+) -> None:
+    headers = await _onboarded(client)
+    created = await _start(client, headers, "runny nose and a cough for 2 days, mild")
+    detail = created
+    for _ in range(12):
+        if detail["next_question"] is None:
+            break
+        detail = (
+            await client.post(
+                f"{ASSESSMENTS}/{detail['id']}/messages",
+                headers=headers,
+                json={
+                    "question_key": detail["next_question"]["key"],
+                    "value": []
+                    if detail["next_question"]["answer_type"] == "symptom_check"
+                    else False,
+                },
+            )
+        ).json()
+
+    completed = (
+        await client.post(f"{ASSESSMENTS}/{created['id']}/analyze", headers=headers)
+    ).json()
+
+    assert completed["specialty"] is not None
+    assert completed["specialty"]["display_name"]
+    assert completed["specialty"]["basis"] in ("condition", "symptom", "default")
+    assert completed["specialty"]["overridden_by_safety"] is False
+
+
+async def test_an_emergency_replaces_the_specialty_with_emergency_care(
+    client: AsyncClient,
+) -> None:
+    """Sending someone with crushing chest pain to an outpatient clinic would
+    be the most dangerous thing this feature could do."""
+    headers = await _onboarded(client)
+    created = await _start(
+        client, headers, "severe crushing chest pain and breathlessness for 1 day"
+    )
+    detail = created
+    for _ in range(12):
+        if detail["next_question"] is None:
+            break
+        detail = (
+            await client.post(
+                f"{ASSESSMENTS}/{detail['id']}/messages",
+                headers=headers,
+                json={
+                    "question_key": detail["next_question"]["key"],
+                    "value": []
+                    if detail["next_question"]["answer_type"] == "symptom_check"
+                    else False,
+                },
+            )
+        ).json()
+
+    completed = (
+        await client.post(f"{ASSESSMENTS}/{created['id']}/analyze", headers=headers)
+    ).json()
+
+    assert completed["safety"]["level"] == "emergency"
+    assert completed["specialty"]["overridden_by_safety"] is True
+    assert completed["specialty"]["display_name"] == "Emergency care"
+
+
+async def test_no_specialty_before_analysis(client: AsyncClient) -> None:
+    """A recommendation needs a prediction; there is none until analysis."""
+    headers = await _onboarded(client)
+
+    created = await _start(client, headers, "I have a mild headache")
+
+    assert created["specialty"] is None

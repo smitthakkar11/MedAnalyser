@@ -107,6 +107,14 @@ class Assessment(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     model_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
     model_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
+    # --- specialty recommendation ----------------------------------------
+    # A transparent lookup from the predicted condition, overridden when the
+    # red-flag engine says this needs emergency care rather than a referral.
+    recommended_specialty: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    specialty_display: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    specialty_reason: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    specialty_basis: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     messages: Mapped[list[AssessmentMessage]] = relationship(

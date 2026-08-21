@@ -555,7 +555,57 @@ do not mention it — because anaemia is not among the 41 conditions in the
 training data. Keeping the two separate is what makes that visible instead of
 hiding it behind a confident-looking single answer.
 
-## 16. Safety architecture
+## 16. Specialty recommendation
+
+### Why a lookup and not a model
+
+The brief says train a classifier *if a suitable labelled dataset exists*, and
+not to fabricate one otherwise. There is a public dataset — `Doctor Specialist
+Recommendation System` (CC BY-SA 4.0), whose `Original_Dataset.csv` is
+byte-identical to the one this project already trains on — but its
+specialty file is a **one-to-one mapping of the same 41 conditions**. A
+classifier trained on 41 rows of a deterministic lookup would memorise it,
+score perfectly, and demonstrate nothing.
+
+So it is used as a **cited cross-reference**, not as training data.
+
+### Where this project diverges from its source, and why
+
+The source mapping could not be used verbatim. It assigns Typhoid to a
+paediatrician in an adults-only product, AIDS to "Osteopathic", Tuberculosis to
+"Tuberculosis" (a broken row), and urinary tract infection to a gynaecologist —
+which both assumes the patient is female and over-refers. It also contains
+typos (`Internal Medcine`) and inconsistent casing.
+
+Thirteen entries therefore diverge, and **each records why in the data file
+itself**. A test asserts the divergences exist and are explained.
+
+### Precedence
+
+1. **A red flag overrides everything.** An emergency needs emergency care, not
+   an outpatient appointment. Pointing someone with crushing chest pain at a
+   cardiology clinic would be the most dangerous thing this feature could do,
+   so `overridden_by_safety` replaces the referral entirely. An *urgent* flag
+   does not override — "see a doctor today" is still served by naming one.
+2. The highest-ranked predicted condition.
+3. A reported symptom, which points at a body system rather than a diagnosis.
+4. General Physician — the honest answer when nothing is clear.
+
+The recommendation is stored on the assessment rather than recomputed, so a
+completed record keeps showing what the user was actually told after the
+mapping is corrected.
+
+### Language
+
+Always "may be an appropriate specialty for further evaluation", never "you
+must see". A test checks the generated wording for "you have", "you must",
+"diagnosed with" and "definitely". The UI states plainly that this is a
+starting point rather than a referral, comes from a fixed mapping rather than
+the model, and is outranked by the user's own doctor.
+
+The mapping has not been reviewed by a clinician, and says so in its header.
+
+## 17. Safety architecture
 
 The red-flag engine is **deliberately outside `services/ml/`**. That is not
 filing preference: the whole point is independence from the model.

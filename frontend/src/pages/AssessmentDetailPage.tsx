@@ -5,6 +5,7 @@ import { MedicalDisclaimer } from '@/components/MedicalDisclaimer';
 import { LabFindings } from '@/components/assessment/LabFindings';
 import { PredictionCard } from '@/components/assessment/PredictionCard';
 import { SafetyBanner } from '@/components/assessment/SafetyBanner';
+import { SpecialtyCard } from '@/components/assessment/SpecialtyCard';
 import { SymptomChips } from '@/components/assessment/SymptomChips';
 import { useAsync } from '@/hooks/useAsync';
 import { assessmentService } from '@/services/assessmentService';
@@ -122,6 +123,8 @@ export function AssessmentDetailPage() {
           )}
         </section>
       )}
+
+      {data.specialty && <SpecialtyCard specialty={data.specialty} />}
 
       <LabFindings findings={data.lab_findings} />
 

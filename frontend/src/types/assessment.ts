@@ -84,6 +84,22 @@ export interface Safety {
   flags: SafetyFlag[];
 }
 
+/**
+ * The kind of doctor suggested for further evaluation.
+ *
+ * A transparent lookup from the predicted condition, not a model output.
+ * `overridden_by_safety` means a red flag replaced the referral with a
+ * direction to emergency care.
+ */
+export interface Specialty {
+  specialty: string;
+  display_name: string;
+  description: string;
+  basis: 'condition' | 'symptom' | 'default' | 'emergency';
+  reason: string;
+  overridden_by_safety: boolean;
+}
+
 export interface AssessmentDetail {
   id: string;
   status: AssessmentStatus;
@@ -102,6 +118,7 @@ export interface AssessmentDetail {
   model_name: string | null;
   model_version: string | null;
   safety: Safety;
+  specialty: Specialty | null;
   linked_reports: LinkedReport[];
   /**
    * Laboratory values from attached reports.

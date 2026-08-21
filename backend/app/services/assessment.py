@@ -39,8 +39,10 @@ from app.schemas.assessment import (
     QuestionResponse,
     SafetyFlagResponse,
     SafetyResponse,
+    SpecialtyResponse,
     SymptomOption,
 )
+from app.services.doctors import DoctorSpecialtyService, get_specialty_service
 from app.services.ml.condition_prediction.inference import (
     MIN_INFORMATIVE_SYMPTOMS,
     ConditionPredictionService,
@@ -81,12 +83,14 @@ class AssessmentService:
         predictor: ConditionPredictionService | None = None,
         lab_context: LabContextService | None = None,
         safety: SafetyRuleEngine | None = None,
+        specialty: DoctorSpecialtyService | None = None,
     ) -> None:
         self._session = session
         self._repository = AssessmentRepository(session)
         self._reports = ReportRepository(session)
         self._lab_context_service = lab_context or get_lab_context_service()
         self._safety = safety or get_safety_engine()
+        self._specialty = specialty or get_specialty_service()
         # Injectable for tests; defaults are the process-wide singletons.
         self._extractor = extractor or get_symptom_extractor()
         self._questions = question_engine or get_question_engine()
@@ -302,6 +306,18 @@ class AssessmentService:
         # Final evaluation, so the completed record states what was shown.
         self._evaluate_safety(assessment)
 
+        # Specialty comes after safety on purpose: an emergency must replace a
+        # referral, not sit beside one.
+        recommendation = self._specialty.recommend(
+            conditions=[prediction.condition for prediction in result.predictions],
+            symptoms=list(assessment.recognised_symptoms or []),
+            safety_level=assessment.safety_level or "none",
+        )
+        assessment.recommended_specialty = recommendation.specialty
+        assessment.specialty_display = recommendation.display_name
+        assessment.specialty_reason = recommendation.reason
+        assessment.specialty_basis = recommendation.basis
+
         await self._session.commit()
         await self._session.refresh(assessment)
 
@@ -423,6 +439,24 @@ class AssessmentService:
             for flag in outcome.triggered
         ]
 
+    def _stored_specialty(self, assessment: Assessment) -> SpecialtyResponse | None:
+        """Render the recommendation recorded on the assessment.
+
+        Read back rather than recomputed, so a completed assessment keeps
+        showing what the user was told even after the mapping is corrected.
+        """
+        if not assessment.recommended_specialty:
+            return None
+        key = assessment.recommended_specialty
+        return SpecialtyResponse(
+            specialty=key,
+            display_name=assessment.specialty_display or key,
+            description=self._specialty.describe(key),
+            basis=assessment.specialty_basis or "default",
+            reason=assessment.specialty_reason or "",
+            overridden_by_safety=assessment.specialty_basis == "emergency",
+        )
+
     async def _detail(self, assessment: Assessment) -> AssessmentDetail:
         lab = await self._lab_context(assessment)
         reports = await self._repository.linked_reports(assessment.id)
@@ -434,6 +468,7 @@ class AssessmentService:
         return AssessmentDetail(
             id=assessment.id,
             safety=_stored_safety(assessment),
+            specialty=self._stored_specialty(assessment),
             status=assessment.status,
             input_text=assessment.input_text,
             recognised_symptoms=list(assessment.recognised_symptoms or []),

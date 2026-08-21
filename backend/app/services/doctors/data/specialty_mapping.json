@@ -1,0 +1,187 @@
+{
+  "_readme": [
+    "Which kind of doctor a predicted condition points towards.",
+    "",
+    "WHY THIS IS A MAPPING AND NOT A MODEL:",
+    "the relationship between the 41 conditions this project predicts and a",
+    "medical specialty is one-to-one and already known. A classifier trained on",
+    "41 rows of a deterministic lookup would memorise it, score perfectly, and",
+    "prove nothing — the brief for this project rules that out by name. A table",
+    "is honest, instant, and can be read and corrected by a clinician.",
+    "",
+    "SOURCE:",
+    "cross-referenced against Doctor_Versus_Disease.csv from the Doctor",
+    "Specialist Recommendation System dataset (CC BY-SA 4.0), which maps the",
+    "same 41 conditions. Where this file diverges from it, the entry records",
+    "`diverges` and says why. Divergences were necessary: that file assigns",
+    "Typhoid to a paediatrician in an adults-only product, AIDS to",
+    "'Osteopathic', Tuberculosis to 'Tuberculosis', and contains typos.",
+    "",
+    "Specialty names follow the project brief's own list, plus General",
+    "Physician as the default when nothing more specific is warranted.",
+    "",
+    "NOT REVIEWED BY A CLINICIAN. Assembled for an educational project and must",
+    "be reviewed before any real-world use."
+  ],
+  "default_specialty": "general_physician",
+  "specialties": {
+    "general_physician": {
+      "display": "General Physician",
+      "description": "A first point of contact who can assess broadly and refer onwards."
+    },
+    "cardiologist": { "display": "Cardiologist", "description": "Heart and circulation." },
+    "gastroenterologist": { "display": "Gastroenterologist", "description": "Digestive system, stomach and bowel." },
+    "hepatologist": { "display": "Hepatologist", "description": "Liver, gallbladder and bile ducts." },
+    "dermatologist": { "display": "Dermatologist", "description": "Skin, hair and nails." },
+    "neurologist": { "display": "Neurologist", "description": "Brain, spine and nervous system." },
+    "orthopedist": { "display": "Orthopaedic surgeon", "description": "Bones, joints and musculoskeletal injury." },
+    "rheumatologist": { "display": "Rheumatologist", "description": "Joints, autoimmune and inflammatory conditions." },
+    "ophthalmologist": { "display": "Ophthalmologist", "description": "Eyes and vision." },
+    "ent": { "display": "ENT specialist", "description": "Ear, nose and throat, including balance." },
+    "gynecologist": { "display": "Gynaecologist", "description": "Female reproductive health." },
+    "urologist": { "display": "Urologist", "description": "Urinary tract and male reproductive health." },
+    "endocrinologist": { "display": "Endocrinologist", "description": "Hormones, thyroid and diabetes." },
+    "pulmonologist": { "display": "Pulmonologist", "description": "Lungs and breathing." },
+    "psychiatrist": { "display": "Psychiatrist", "description": "Mental health." },
+    "infectious_disease": { "display": "Infectious disease specialist", "description": "Infections needing specialist management." },
+    "allergist": { "display": "Allergist / immunologist", "description": "Allergies and immune reactions." },
+    "vascular_surgeon": { "display": "Vascular specialist", "description": "Veins and arteries." },
+    "proctologist": { "display": "Colorectal specialist", "description": "Lower bowel, rectum and anus." }
+  },
+  "conditions": {
+    "Acne": { "specialty": "dermatologist" },
+    "AIDS": {
+      "specialty": "infectious_disease",
+      "diverges": "Source says 'Osteopathic'. HIV care belongs with infectious disease or an HIV clinic."
+    },
+    "Alcoholic hepatitis": { "specialty": "hepatologist" },
+    "Allergy": { "specialty": "allergist" },
+    "Arthritis": { "specialty": "rheumatologist" },
+    "Bronchial Asthma": { "specialty": "pulmonologist" },
+    "Cervical spondylosis": {
+      "specialty": "orthopedist",
+      "diverges": "Source says Neurologist. Degenerative neck disease is usually orthopaedic first; neurology if there are nerve signs."
+    },
+    "Chicken pox": {
+      "specialty": "general_physician",
+      "diverges": "Source says Dermatologist. Uncomplicated chickenpox in an adult is managed in primary care."
+    },
+    "Chronic cholestasis": { "specialty": "hepatologist" },
+    "Common Cold": {
+      "specialty": "general_physician",
+      "diverges": "Source says Otolaryngologist. A common cold does not warrant an ENT referral."
+    },
+    "Dengue": {
+      "specialty": "infectious_disease",
+      "diverges": "Source says 'Internal Medcine' (sic)."
+    },
+    "Diabetes": { "specialty": "endocrinologist" },
+    "Dimorphic hemmorhoids(piles)": {
+      "specialty": "proctologist",
+      "diverges": "Source says Gastroenterologist. Haemorrhoids are typically colorectal."
+    },
+    "Drug Reaction": { "specialty": "allergist" },
+    "Fungal infection": { "specialty": "dermatologist" },
+    "GERD": { "specialty": "gastroenterologist" },
+    "Gastroenteritis": { "specialty": "general_physician",
+      "diverges": "Source says Gastroenterologist. Acute gastroenteritis is usually self-limiting and managed in primary care." },
+    "Heart attack": { "specialty": "cardiologist" },
+    "Hepatitis B": { "specialty": "hepatologist" },
+    "Hepatitis C": { "specialty": "hepatologist" },
+    "Hepatitis D": { "specialty": "hepatologist" },
+    "Hepatitis E": { "specialty": "hepatologist" },
+    "hepatitis A": { "specialty": "hepatologist" },
+    "Hypertension": { "specialty": "cardiologist" },
+    "Hyperthyroidism": { "specialty": "endocrinologist" },
+    "Hypoglycemia": { "specialty": "endocrinologist" },
+    "Hypothyroidism": { "specialty": "endocrinologist" },
+    "Impetigo": { "specialty": "dermatologist" },
+    "Jaundice": {
+      "specialty": "hepatologist",
+      "diverges": "Source says Gastroenterologist. Jaundice is a liver presentation."
+    },
+    "Malaria": {
+      "specialty": "infectious_disease",
+      "diverges": "Source says 'Internal Medcine' (sic)."
+    },
+    "Migraine": { "specialty": "neurologist" },
+    "Osteoarthristis": { "specialty": "rheumatologist" },
+    "Paralysis (brain hemorrhage)": { "specialty": "neurologist" },
+    "Peptic ulcer diseae": { "specialty": "gastroenterologist" },
+    "Pneumonia": { "specialty": "pulmonologist" },
+    "Psoriasis": { "specialty": "dermatologist" },
+    "Tuberculosis": {
+      "specialty": "pulmonologist",
+      "diverges": "Source row is broken — it lists the specialty as 'Tuberculosis'."
+    },
+    "Typhoid": {
+      "specialty": "infectious_disease",
+      "diverges": "Source says Pediatrician. This product is for adults only."
+    },
+    "Urinary tract infection": {
+      "specialty": "general_physician",
+      "diverges": "Source says Gynecologist, which both assumes the patient is female and over-refers. Uncomplicated UTI is primary care; urology if recurrent."
+    },
+    "Varicose veins": {
+      "specialty": "vascular_surgeon",
+      "diverges": "Source says Phlebologist, which is not a widely recognised specialty title in the UK."
+    },
+    "(vertigo) Paroymsal Positional Vertigo": { "specialty": "ent" }
+  },
+  "symptom_fallback": {
+    "_note": "Used only when no condition could be predicted. Deliberately coarse — it points at the body system, not a diagnosis.",
+    "chest_pain": "cardiologist",
+    "palpitations": "cardiologist",
+    "fast_heart_rate": "cardiologist",
+    "breathlessness": "pulmonologist",
+    "cough": "general_physician",
+    "blood_in_sputum": "pulmonologist",
+    "skin_rash": "dermatologist",
+    "itching": "dermatologist",
+    "blister": "dermatologist",
+    "pus_filled_pimples": "dermatologist",
+    "abdominal_pain": "gastroenterologist",
+    "stomach_pain": "gastroenterologist",
+    "vomiting": "general_physician",
+    "diarrhoea": "general_physician",
+    "constipation": "gastroenterologist",
+    "yellowing_of_eyes": "hepatologist",
+    "yellowish_skin": "hepatologist",
+    "dark_urine": "hepatologist",
+    "headache": "general_physician",
+    "slurred_speech": "neurologist",
+    "weakness_of_one_body_side": "neurologist",
+    "loss_of_balance": "neurologist",
+    "spinning_movements": "ent",
+    "joint_pain": "rheumatologist",
+    "swelling_joints": "rheumatologist",
+    "knee_pain": "orthopedist",
+    "hip_joint_pain": "orthopedist",
+    "back_pain": "orthopedist",
+    "neck_pain": "orthopedist",
+    "blurred_and_distorted_vision": "ophthalmologist",
+    "redness_of_eyes": "ophthalmologist",
+    "watering_from_eyes": "ophthalmologist",
+    "burning_micturition": "urologist",
+    "bladder_discomfort": "urologist",
+    "polyuria": "urologist",
+    "abnormal_menstruation": "gynecologist",
+    "depression": "psychiatrist",
+    "anxiety": "psychiatrist",
+    "mood_swings": "psychiatrist",
+    "irritability": "psychiatrist",
+    "enlarged_thyroid": "endocrinologist",
+    "excessive_hunger": "endocrinologist",
+    "weight_gain": "endocrinologist",
+    "weight_loss": "endocrinologist",
+    "throat_irritation": "ent",
+    "patches_in_throat": "ent",
+    "sinus_pressure": "ent",
+    "loss_of_smell": "ent",
+    "prominent_veins_on_calf": "vascular_surgeon",
+    "swollen_blood_vessels": "vascular_surgeon",
+    "pain_in_anal_region": "proctologist",
+    "bloody_stool": "proctologist",
+    "irritation_in_anus": "proctologist"
+  }
+}

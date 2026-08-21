@@ -26,7 +26,7 @@ medical specialty for further evaluation.
 | **6** | Medical report upload: PDF text extraction, OCR fallback, lab value extraction | ✅ Complete |
 | **7** | Reports attached to assessments: lab evidence, provenance, lab-driven questions | ✅ Complete |
 | **8** | Safety / red-flag engine: deterministic rules, sourced, taking priority over the model | ✅ Complete |
-| 9 | Doctor-specialty recommendation | Not started |
+| **9** | Doctor-specialty recommendation: sourced mapping, safety override | ✅ Complete |
 | 10 | Treatment / medication knowledge base | Not started |
 | 11 | Nearby doctor discovery | Not started |
 | 12 | Medical timeline + trends | Not started |
@@ -430,6 +430,35 @@ reassurance words.
 
 ---
 
+## Which doctor to see
+
+A completed assessment suggests a specialty — a **transparent lookup**, not a
+model. The brief says only train a classifier if a suitable labelled dataset
+exists; the one that does is a one-to-one mapping of the same 41 conditions, so
+a classifier would memorise it and prove nothing.
+
+It is cross-referenced against
+[that dataset](https://www.kaggle.com/datasets/ebrahimelgazar/doctor-specialist-recommendation-system)
+(CC BY-SA 4.0), but **13 entries deliberately diverge** and each records why in
+[`specialty_mapping.json`](backend/app/services/doctors/data/specialty_mapping.json).
+The source sends Typhoid to a paediatrician in an adults-only product, AIDS to
+"Osteopathic", and Tuberculosis to "Tuberculosis".
+
+**A red flag overrides the recommendation.** Pointing someone with crushing
+chest pain at a cardiology clinic would be worse than saying nothing, so an
+emergency replaces the referral with a direction to emergency care:
+
+```
+"severe crushing chest pain"  →  model: Heart attack
+                              →  safety: EMERGENCY
+                              →  who to see: Emergency care  (not Cardiologist)
+```
+
+Wording is always "may be an appropriate specialty for further evaluation" —
+a test checks the generated text for "you have", "you must" and "definitely".
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -450,7 +479,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (437 tests)
+pytest                     # test suite (466 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 
