@@ -28,12 +28,15 @@ from app.models.assessment import (
 from app.models.assessment_report import AssessmentReport
 from app.models.user import User
 from app.repositories.assessment import AssessmentRepository
+from app.repositories.profile import ProfileRepository
 from app.repositories.report import ReportRepository
 from app.schemas.assessment import (
     AssessmentDetail,
     AssessmentSummary,
+    KnowledgeResponse,
     LabFindingResponse,
     LinkedReportResponse,
+    MedicationInfoResponse,
     MessageResponse,
     PredictionResponse,
     QuestionResponse,
@@ -43,6 +46,7 @@ from app.schemas.assessment import (
     SymptomOption,
 )
 from app.services.doctors import DoctorSpecialtyService, get_specialty_service
+from app.services.knowledge import KnowledgeService, get_knowledge_service
 from app.services.ml.condition_prediction.inference import (
     MIN_INFORMATIVE_SYMPTOMS,
     ConditionPredictionService,
@@ -84,13 +88,16 @@ class AssessmentService:
         lab_context: LabContextService | None = None,
         safety: SafetyRuleEngine | None = None,
         specialty: DoctorSpecialtyService | None = None,
+        knowledge: KnowledgeService | None = None,
     ) -> None:
         self._session = session
         self._repository = AssessmentRepository(session)
         self._reports = ReportRepository(session)
+        self._profiles = ProfileRepository(session)
         self._lab_context_service = lab_context or get_lab_context_service()
         self._safety = safety or get_safety_engine()
         self._specialty = specialty or get_specialty_service()
+        self._knowledge = knowledge or get_knowledge_service()
         # Injectable for tests; defaults are the process-wide singletons.
         self._extractor = extractor or get_symptom_extractor()
         self._questions = question_engine or get_question_engine()
@@ -457,6 +464,45 @@ class AssessmentService:
             overridden_by_safety=assessment.specialty_basis == "emergency",
         )
 
+    async def _knowledge_for(self, assessment: Assessment) -> KnowledgeResponse | None:
+        """Information for the top predicted condition, if there is one.
+
+        Allergies come from the user's own profile, so a class they react to is
+        flagged rather than presented flat.
+        """
+        top = assessment.top_condition
+        if not top:
+            return None
+
+        allergies = await self._profiles.list_allergies(assessment.user_id)
+        entry = self._knowledge.for_condition(
+            top, allergies=[allergy.substance for allergy in allergies]
+        )
+        if entry is None:
+            return None
+
+        return KnowledgeResponse(
+            condition=entry.condition,
+            summary=entry.summary,
+            summary_source=entry.summary_source,
+            summary_source_url=entry.summary_source_url,
+            approaches=entry.approaches,
+            medications=[
+                MedicationInfoResponse(
+                    key=medicine.key,
+                    display_name=medicine.display_name,
+                    common_uses=medicine.common_uses,
+                    considerations=medicine.considerations,
+                    source=medicine.source,
+                    source_url=medicine.source_url,
+                    allergy_warning=medicine.allergy_warning,
+                )
+                for medicine in entry.medications
+            ],
+            questions=entry.questions,
+            disclaimer=entry.disclaimer,
+        )
+
     async def _detail(self, assessment: Assessment) -> AssessmentDetail:
         lab = await self._lab_context(assessment)
         reports = await self._repository.linked_reports(assessment.id)
@@ -469,6 +515,7 @@ class AssessmentService:
             id=assessment.id,
             safety=_stored_safety(assessment),
             specialty=self._stored_specialty(assessment),
+            knowledge=await self._knowledge_for(assessment),
             status=assessment.status,
             input_text=assessment.input_text,
             recognised_symptoms=list(assessment.recognised_symptoms or []),

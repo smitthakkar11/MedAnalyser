@@ -318,3 +318,48 @@ async def test_no_specialty_before_analysis(client: AsyncClient) -> None:
     created = await _start(client, headers, "I have a mild headache")
 
     assert created["specialty"] is None
+
+
+# ----------------------------------------------- treatment information
+
+
+async def test_an_analysed_assessment_carries_treatment_information(
+    client: AsyncClient,
+) -> None:
+    headers = await _onboarded(client)
+    created = await _start(client, headers, "runny nose and a cough for 2 days, mild")
+    detail = created
+    for _ in range(12):
+        if detail["next_question"] is None:
+            break
+        detail = (
+            await client.post(
+                f"{ASSESSMENTS}/{detail['id']}/messages",
+                headers=headers,
+                json={
+                    "question_key": detail["next_question"]["key"],
+                    "value": []
+                    if detail["next_question"]["answer_type"] == "symptom_check"
+                    else False,
+                },
+            )
+        ).json()
+
+    completed = (
+        await client.post(f"{ASSESSMENTS}/{created['id']}/analyze", headers=headers)
+    ).json()
+
+    knowledge = completed["knowledge"]
+    assert knowledge is not None
+    assert knowledge["disclaimer"]
+    assert "is not a prescription" in knowledge["disclaimer"]
+    assert knowledge["questions"], "should suggest questions to ask a doctor"
+
+
+async def test_no_treatment_information_before_analysis(client: AsyncClient) -> None:
+    """There is no condition to look up until the model has run."""
+    headers = await _onboarded(client)
+
+    created = await _start(client, headers, "I have a mild headache")
+
+    assert created["knowledge"] is None

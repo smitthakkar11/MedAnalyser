@@ -165,6 +165,38 @@ class SpecialtyResponse(BaseModel):
     overridden_by_safety: bool = False
 
 
+class MedicationInfoResponse(BaseModel):
+    """A class of medicine, never a product and never a dose.
+
+    `allergy_warning` is set when the user's own profile records an allergy
+    that may relate to this group.
+    """
+
+    key: str
+    display_name: str
+    common_uses: str
+    considerations: str
+    source: str
+    source_url: str
+    allergy_warning: str | None = None
+
+
+class KnowledgeResponse(BaseModel):
+    """Curated treatment and medication information for the top condition.
+
+    Educational only. `disclaimer` must be shown wherever this is rendered.
+    """
+
+    condition: str
+    summary: str
+    summary_source: str | None = None
+    summary_source_url: str | None = None
+    approaches: list[str] = Field(default_factory=list)
+    medications: list[MedicationInfoResponse] = Field(default_factory=list)
+    questions: list[str] = Field(default_factory=list)
+    disclaimer: str
+
+
 class AssessmentSummary(BaseModel):
     """An assessment as it appears in a list."""
 
@@ -205,6 +237,9 @@ class AssessmentDetail(BaseModel):
     safety: SafetyResponse
     #: Suggested specialty, present once the assessment has been analysed.
     specialty: SpecialtyResponse | None = None
+    #: Treatment and medication information for the top predicted condition.
+    #: Educational only — this project does not prescribe.
+    knowledge: KnowledgeResponse | None = None
 
     predictions: list[PredictionResponse] = Field(default_factory=list)
     model_name: str | None

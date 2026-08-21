@@ -27,7 +27,7 @@ medical specialty for further evaluation.
 | **7** | Reports attached to assessments: lab evidence, provenance, lab-driven questions | ✅ Complete |
 | **8** | Safety / red-flag engine: deterministic rules, sourced, taking priority over the model | ✅ Complete |
 | **9** | Doctor-specialty recommendation: sourced mapping, safety override | ✅ Complete |
-| 10 | Treatment / medication knowledge base | Not started |
+| **10** | Treatment & medication knowledge base, with allergy cross-check | ✅ Complete |
 | 11 | Nearby doctor discovery | Not started |
 | 12 | Medical timeline + trends | Not started |
 | 13 | Testing, security, Docker & deployment | Not started |
@@ -459,6 +459,32 @@ a test checks the generated text for "you have", "you must" and "definitely".
 
 ---
 
+## Treatment information
+
+A completed assessment shows curated information for the top condition: what it
+is, how it is generally approached, which **classes** of medicine may come up,
+and questions worth asking a doctor.
+
+It states **no doses** and never tells anyone to start, stop or change a
+medicine. Both are enforced by tests that grep every user-facing string and fail
+the build on a hit.
+
+**The user's allergies are cross-checked.** A penicillin allergy on the profile
+flags the antibiotics entry on a UTI assessment rather than presenting it flat.
+Matching is deliberately loose — over-warning starts a conversation, a missed
+warning does not.
+
+The source dataset ships a precautions file for all 41 conditions. It is
+**deliberately unused**: an audit found `"stop taking drug"`, `"take radioactive
+iodine treatment"`, `"take otc pain reliver"`, unevidenced folk remedies, and
+`"salt baths"` for hypertension. Only its descriptions are used, attributed; a
+test asserts none of the rejected text leaked in.
+
+> This information is educational and is not a prescription. The content has
+> **not been reviewed by a clinician** and must be before any real use.
+
+---
+
 ## Theming
 
 The UI ships light and dark themes. The toggle in the header switches between
@@ -479,7 +505,7 @@ unreachable.
 
 ```bash
 # Backend (from backend/, venv active)
-pytest                     # test suite (466 tests)
+pytest                     # test suite (486 tests)
 ruff check . && ruff format --check .
 mypy                       # strict type checking
 

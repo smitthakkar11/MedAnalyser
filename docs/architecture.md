@@ -605,6 +605,59 @@ the model, and is outranked by the user's own doctor.
 
 The mapping has not been reviewed by a clinician, and says so in its header.
 
+## 17. Treatment and medication knowledge
+
+Retrieved by predicted condition. The project does not prescribe, and the
+constraints are enforced by tests rather than trusted to discipline.
+
+### What it never contains
+
+* **No doses.** A test greps every user-facing string for `\d+ mg|ml|mcg|units`
+  and fails the build on a hit.
+* **No instruction to start, stop or change a medicine.** A second test greps
+  for "stop taking", "start taking", "you should take", "increase your dose".
+* Medication entries describe a **class**, not a product.
+
+Both scans read the parsed payload rather than the raw file, because each data
+file's `_readme` quotes the forbidden phrases in order to document why they
+were excluded.
+
+### Why the source precautions are not used
+
+The Phase 4 dataset ships `symptom_precaution.csv` for all 41 conditions, and
+using it would have been the obvious shortcut. An audit found it unusable:
+
+| Entry | Problem |
+| --- | --- |
+| `Drug Reaction → "stop taking drug"` | Exactly the instruction the brief forbids |
+| `Hyperthyroidism → "take radioactive iodine treatment"` | Directing a user to a specific treatment |
+| `Cervical spondylosis → "take otc pain reliver"` | Medication instruction |
+| `Hypertension → "salt baths"` | Nonsensical, and salt is the wrong association |
+| several | Unevidenced folk remedies presented as advice |
+
+Only the **descriptions** from that dataset are used, attributed. Approaches,
+medication classes and questions are curated, and a test asserts none of the
+rejected precaution text leaked in.
+
+### The allergy cross-check
+
+This is where the Phase 3 profile earns its place. Each medication class carries
+`allergy_keywords`; the user's recorded allergies are matched against them and a
+conflicting entry is flagged rather than shown flat. Matching is substring in
+both directions and deliberately loose — "amoxicillin" on a profile should reach
+the antibiotic class and vice versa. Over-warning is the safe direction: a
+spurious flag starts a conversation, a missed one does not.
+
+### Storage
+
+A JSON data file in git, not a database table, despite the brief sketching a
+schema. This is curated reference content whose main quality control is *review*
+— a clinician can read it as a diff on a pull request. It also sidesteps a name
+collision with the `medications` table, which holds the user's own medicines.
+
+The knowledge base is generated once by `ml/knowledge/build_condition_knowledge.py`
+and committed, so the reviewed artefact is the one that ships.
+
 ## 17. Safety architecture
 
 The red-flag engine is **deliberately outside `services/ml/`**. That is not

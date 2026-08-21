@@ -100,6 +100,34 @@ export interface Specialty {
   overridden_by_safety: boolean;
 }
 
+/** A class of medicine — never a product, never a dose. */
+export interface MedicationInfo {
+  key: string;
+  display_name: string;
+  common_uses: string;
+  considerations: string;
+  source: string;
+  source_url: string;
+  /** Set when the user's profile records an allergy that may relate to this. */
+  allergy_warning: string | null;
+}
+
+/**
+ * Curated treatment and medication information for the top condition.
+ *
+ * Educational only. `disclaimer` must be shown wherever this is rendered.
+ */
+export interface Knowledge {
+  condition: string;
+  summary: string;
+  summary_source: string | null;
+  summary_source_url: string | null;
+  approaches: string[];
+  medications: MedicationInfo[];
+  questions: string[];
+  disclaimer: string;
+}
+
 export interface AssessmentDetail {
   id: string;
   status: AssessmentStatus;
@@ -119,6 +147,7 @@ export interface AssessmentDetail {
   model_version: string | null;
   safety: Safety;
   specialty: Specialty | null;
+  knowledge: Knowledge | null;
   linked_reports: LinkedReport[];
   /**
    * Laboratory values from attached reports.

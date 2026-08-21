@@ -1,0 +1,149 @@
+{
+  "_readme": [
+    "Medication CLASSES, not products, and never doses.",
+    "",
+    "This project does not prescribe. It describes what a class of medicine is",
+    "generally used for and what is commonly discussed with a doctor before",
+    "taking it, so a user can have a better-informed conversation. It must",
+    "never tell anyone to start, stop or change a medicine, and it never states",
+    "a dose — a test enforces both.",
+    "",
+    "`allergy_keywords` are matched against the allergies on a user's profile,",
+    "so information about a class they react to is flagged rather than shown",
+    "flat. Matching is substring and deliberately loose: over-warning here is",
+    "the safe direction.",
+    "",
+    "NOT REVIEWED BY A CLINICIAN. Written from public patient-facing sources",
+    "for an educational project and must be reviewed before any real use."
+  ],
+  "classes": {
+    "analgesic": {
+      "display": "Pain relief",
+      "common_uses": "Reducing pain and, for some, fever.",
+      "considerations": "Different pain relievers suit different people. Some affect the stomach, kidneys or liver, and some interact with blood thinners or blood pressure medicines.",
+      "allergy_keywords": ["aspirin", "ibuprofen", "nsaid", "paracetamol", "acetaminophen", "naproxen", "diclofenac"],
+      "source": "NHS — Medicines A to Z",
+      "source_url": "https://www.nhs.uk/medicines/"
+    },
+    "antibiotic": {
+      "display": "Antibiotics",
+      "common_uses": "Treating bacterial infections. They do not work against viruses such as colds or flu.",
+      "considerations": "A course is normally taken exactly as directed by the prescriber. Ask about interactions, and mention any previous reaction to an antibiotic before starting one.",
+      "allergy_keywords": ["penicillin", "amoxicillin", "cephalosporin", "sulfa", "sulphonamide", "erythromycin", "azithromycin", "tetracycline", "doxycycline", "ciprofloxacin"],
+      "source": "NHS — Antibiotics",
+      "source_url": "https://www.nhs.uk/conditions/antibiotics/"
+    },
+    "antifungal": {
+      "display": "Antifungal medicines",
+      "common_uses": "Treating fungal infections of the skin, nails or elsewhere.",
+      "considerations": "Creams and tablets differ considerably in how they act and what they interact with. Oral antifungals can affect the liver, so existing liver problems are worth mentioning.",
+      "allergy_keywords": ["clotrimazole", "fluconazole", "terbinafine", "miconazole", "ketoconazole"],
+      "source": "NHS — Antifungal medicines",
+      "source_url": "https://www.nhs.uk/conditions/antifungal-medicines/"
+    },
+    "antiviral": {
+      "display": "Antiviral medicines",
+      "common_uses": "Treating or controlling certain viral infections.",
+      "considerations": "Often most effective when started early. Several interact with other medicines, so a full list of what you take is useful at the appointment.",
+      "allergy_keywords": ["aciclovir", "acyclovir", "oseltamivir", "valaciclovir"],
+      "source": "NHS — Medicines A to Z",
+      "source_url": "https://www.nhs.uk/medicines/"
+    },
+    "antihistamine": {
+      "display": "Antihistamines",
+      "common_uses": "Relieving allergy symptoms such as itching, sneezing and rashes.",
+      "considerations": "Some cause drowsiness and affect driving. They can interact with alcohol and with sedating medicines.",
+      "allergy_keywords": ["cetirizine", "loratadine", "chlorphenamine", "piriton", "fexofenadine"],
+      "source": "NHS — Antihistamines",
+      "source_url": "https://www.nhs.uk/conditions/antihistamines/"
+    },
+    "corticosteroid": {
+      "display": "Steroid medicines",
+      "common_uses": "Reducing inflammation, in creams, inhalers or tablets depending on the condition.",
+      "considerations": "Longer courses need medical supervision and are not stopped abruptly. Ask about effects on blood sugar, bone health and infection risk.",
+      "allergy_keywords": ["prednisolone", "hydrocortisone", "beclometasone", "steroid"],
+      "source": "NHS — Steroids",
+      "source_url": "https://www.nhs.uk/conditions/steroids/"
+    },
+    "bronchodilator": {
+      "display": "Inhaled relievers",
+      "common_uses": "Opening the airways in asthma and some other lung conditions.",
+      "considerations": "Needing a reliever more often than usual is a sign to be reviewed rather than to simply use it more. Inhaler technique changes how well it works.",
+      "allergy_keywords": ["salbutamol", "ventolin", "salmeterol", "terbutaline"],
+      "source": "NHS — Asthma treatment",
+      "source_url": "https://www.nhs.uk/conditions/asthma/treatment/"
+    },
+    "antacid_ppi": {
+      "display": "Antacids and acid-reducing medicines",
+      "common_uses": "Reducing stomach acid in reflux, heartburn and ulcers.",
+      "considerations": "Long-term use is normally reviewed. Some affect how other medicines are absorbed, and ongoing symptoms despite treatment are worth reporting.",
+      "allergy_keywords": ["omeprazole", "lansoprazole", "ranitidine", "gaviscon"],
+      "source": "NHS — Indigestion",
+      "source_url": "https://www.nhs.uk/conditions/indigestion/"
+    },
+    "antidiabetic": {
+      "display": "Diabetes medicines",
+      "common_uses": "Controlling blood glucose.",
+      "considerations": "Doses are individual and adjusted by the prescriber. Ask what to do on days when you are unwell or eating differently, and about recognising low blood sugar.",
+      "allergy_keywords": ["metformin", "gliclazide", "insulin", "sitagliptin"],
+      "source": "NHS — Type 2 diabetes",
+      "source_url": "https://www.nhs.uk/conditions/type-2-diabetes/"
+    },
+    "thyroid_medicine": {
+      "display": "Thyroid medicines",
+      "common_uses": "Replacing or reducing thyroid hormone.",
+      "considerations": "Doses are set from blood tests and reviewed regularly. Timing relative to food and other medicines can matter.",
+      "allergy_keywords": ["levothyroxine", "carbimazole", "thyroxine"],
+      "source": "NHS — Underactive thyroid",
+      "source_url": "https://www.nhs.uk/conditions/underactive-thyroid-hypothyroidism/"
+    },
+    "antihypertensive": {
+      "display": "Blood pressure medicines",
+      "common_uses": "Lowering blood pressure and reducing cardiovascular risk.",
+      "considerations": "Usually taken long term even when you feel well. Ask about side effects, monitoring, and what to do if you miss a dose.",
+      "allergy_keywords": ["amlodipine", "ramipril", "lisinopril", "losartan", "bisoprolol", "atenolol"],
+      "source": "NHS — High blood pressure",
+      "source_url": "https://www.nhs.uk/conditions/high-blood-pressure-hypertension/"
+    },
+    "antimalarial": {
+      "display": "Antimalarial medicines",
+      "common_uses": "Treating or preventing malaria.",
+      "considerations": "Which medicine is appropriate depends on where the infection was acquired. Malaria can become serious quickly and needs prompt medical care.",
+      "allergy_keywords": ["chloroquine", "artemether", "quinine", "doxycycline"],
+      "source": "NHS — Malaria",
+      "source_url": "https://www.nhs.uk/conditions/malaria/"
+    },
+    "antitubercular": {
+      "display": "Tuberculosis treatment",
+      "common_uses": "Treating tuberculosis, normally as a combination over several months.",
+      "considerations": "Completing the full course matters for both recovery and resistance. Regular monitoring, including liver checks, is usual.",
+      "allergy_keywords": ["isoniazid", "rifampicin", "ethambutol", "pyrazinamide"],
+      "source": "NHS — Tuberculosis treatment",
+      "source_url": "https://www.nhs.uk/conditions/tuberculosis-tb/treatment/"
+    },
+    "topical_skin": {
+      "display": "Skin treatments",
+      "common_uses": "Creams, ointments and shampoos applied to the skin.",
+      "considerations": "How much and how often varies a great deal by product and body area. Some thin the skin with prolonged use.",
+      "allergy_keywords": ["calamine", "coal tar", "salicylic"],
+      "source": "NHS — Medicines A to Z",
+      "source_url": "https://www.nhs.uk/medicines/"
+    },
+    "rehydration": {
+      "display": "Rehydration",
+      "common_uses": "Replacing fluid and salts lost through vomiting or diarrhoea.",
+      "considerations": "Oral rehydration solutions are designed for this; plain water alone may not replace salts. Being unable to keep fluids down needs medical attention.",
+      "allergy_keywords": [],
+      "source": "NHS — Diarrhoea and vomiting",
+      "source_url": "https://www.nhs.uk/conditions/diarrhoea-and-vomiting/"
+    },
+    "vaccine": {
+      "display": "Vaccination",
+      "common_uses": "Preventing certain infections, or reducing their severity.",
+      "considerations": "Eligibility and timing depend on age, health and history. A previous reaction to a vaccine is important to mention.",
+      "allergy_keywords": ["vaccine", "egg"],
+      "source": "NHS — Vaccinations",
+      "source_url": "https://www.nhs.uk/vaccinations/"
+    }
+  }
+}
