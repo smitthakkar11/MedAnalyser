@@ -28,6 +28,9 @@ dist-ssr/
 /storage/
 /backend/storage/
 
+# Local working notes, not part of the project
+/HANDOFF.md
+
 # Editors / OS / local tooling
 .DS_Store
 .idea/
